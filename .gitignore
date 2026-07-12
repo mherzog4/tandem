@@ -1,3 +1,5 @@
 /tandem
 /tandem-relay
 .playwright-cli/
+tandem-recap-*.md
+tandem-cast-*.cast
