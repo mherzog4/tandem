@@ -488,6 +488,9 @@
           text.textContent = c.text;
           const meta = document.createElement("small");
           meta.textContent = `${c.author} · ${c.state}${c.codeName ? ` · code: ${c.codeName}` : ""}`;
+          // Extractor provenance (FR12): hover shows the transcript
+          // quote that produced the proposal.
+          if (c.provenance) meta.title = `evidence: "${c.provenance}"`;
 
           el.append(del, text, meta);
 

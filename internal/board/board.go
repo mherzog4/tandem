@@ -42,6 +42,23 @@ type Card struct {
 	// CodeName is the engineer-facing alias (PRD risk 5); the business
 	// wording in Text always wins for display. Populated in issue #18.
 	CodeName string `json:"codeName,omitempty"`
+	// Provenance is the transcript quote that produced an
+	// extractor-proposed card (FR12) — shown so proposals can be judged
+	// at a glance.
+	Provenance string `json:"provenance,omitempty"`
+}
+
+// Propose appends an already-shaped proposed card (extractor path).
+func (b *Board) Propose(c Card) (Card, bool) {
+	if !ValidType(c.Type) || c.Text == "" || c.Author == "" {
+		return Card{}, false
+	}
+	c.ID = newID()
+	c.State = StateProposed
+	b.mu.Lock()
+	b.cards = append(b.cards, c)
+	b.mu.Unlock()
+	return c, true
 }
 
 type Board struct {
