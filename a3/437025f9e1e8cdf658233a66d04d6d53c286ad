@@ -1,0 +1,46 @@
+web/app.js
+  s_6f6ec78b82b8ab::t_68da09f82d57bd 143-144
+  s_6f6ec78b82b8ab::t_423ab1e8051c46 303-313
+  s_6f6ec78b82b8ab::t_a680cbc2c0f10f 247-272,280,282-285
+  s_6f6ec78b82b8ab::t_40c4b432191962 196-198,200-202,204-217
+  s_6f6ec78b82b8ab::t_c21ee226fbcb74 166-195,199,203,218-221,227-246,273-279,281,286-302,314-330
+  s_6f6ec78b82b8ab::t_3a55841cb487d9 222-226
+internal/composer/composer.go
+  s_6f6ec78b82b8ab::t_ab2ea062547337 1-38,41-112,118-208,212,216-217,241-258
+  s_6f6ec78b82b8ab::t_c49ef044806f1a 39-40
+  s_6f6ec78b82b8ab::t_d473967ce4e4cf 113-117
+  s_6f6ec78b82b8ab::t_e463ce49ec05ae 209-211,213-215,218-240
+internal/broker/broker_test.go
+  s_6f6ec78b82b8ab::t_c458a467113a73 1-143
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_2951b818012c6e 203-205
+  s_6f6ec78b82b8ab::t_585f28b7f4e35e 58-62
+web/index.html
+  s_6f6ec78b82b8ab::t_c9da0b414abf65 62-72
+  s_6f6ec78b82b8ab::t_9a9a7c9b1d04b2 25-44
+internal/broker/broker.go
+  s_6f6ec78b82b8ab::t_618c45dbdb55d2 43-45
+  s_6f6ec78b82b8ab::t_b7694a199fa878 1-42,46-93
+internal/composer/composer_test.go
+  s_6f6ec78b82b8ab::t_d22c4bfa6b949f 122-154
+  s_6f6ec78b82b8ab::t_22acc46a03523a 1-121
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_845c11a0b396f2 45-46
+  s_6f6ec78b82b8ab::t_9aca1ce0434f0e 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "a3437025f9e1e8cdf658233a66d04d6d53c286ad",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
