@@ -22,6 +22,13 @@
   #shutter .card { font-size: 22px; line-height: 1.6; background: #161b22; border: 1px solid #30363d;
                    border-radius: 12px; padding: 32px 48px; }
   #shutter small { color: #8b949e; }
+  #consent { display: none; position: fixed; inset: 0; background: #0d1117f8; z-index: 20;
+             align-items: center; justify-content: center; text-align: center; }
+  #consent .card { font-size: 20px; line-height: 1.6; background: #161b22; border: 1px solid #f85149;
+                   border-radius: 12px; padding: 32px 48px; }
+  #consent small { color: #8b949e; }
+  #consent button { font-size: 15px; padding: 8px 20px; border-radius: 6px; border: 0; background: #da3633; color: white; cursor: pointer; }
+  #email[hidden] { display: none; }
   #main { display: flex; height: calc(100vh - 31px); }
   #termwrap { flex: 1; min-width: 0; position: relative; }
   #pointer-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
@@ -91,6 +98,7 @@
 <div id="join">
   <h2>Join Tandem session</h2>
   <input id="name" placeholder="Your name" maxlength="40" autofocus>
+  <input id="email" placeholder="Your email (this session has a guest list)" maxlength="120" type="email" hidden>
   <button id="go">Join</button>
   <div id="joinerr" class="err"></div>
 </div>
@@ -151,6 +159,12 @@
   </div>
   <div id="shutter">
     <div class="card">⏸<br>Host paused sharing<br><small>the view resumes when they unpause</small></div>
+  </div>
+  <div id="consent">
+    <div class="card">🔴<br>This session is being recorded<br>
+      <small>your prompts, edits, and this terminal view are captured</small><br><br>
+      <button id="consentok">I understand — continue</button>
+    </div>
   </div>
 </div>
 <script src="/static/vendor/xterm.min.js"></script>

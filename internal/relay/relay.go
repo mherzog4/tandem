@@ -46,6 +46,9 @@ type session struct {
 	guests      map[*websocket.Conn]string // conn -> display name
 	resumeToken string
 	reapTimer   *time.Timer // armed while host is disconnected
+	// allowedEmails, when non-empty, restricts who may join (FR22).
+	// Claimed, not verified — see docs/protocol.md.
+	allowedEmails map[string]bool
 }
 
 // Server is an http.Handler serving the relay protocol.
@@ -174,11 +177,28 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Host -> all guests, verbatim.
+	// Host -> all guests, verbatim. One exception: a text frame of type
+	// "allowlist" is a host->relay instruction (FR22), consumed here.
 	for {
 		typ, data, err := conn.Read(ctx)
 		if err != nil {
 			return
+		}
+		if typ == websocket.MessageText {
+			var msg struct {
+				Type   string   `json:"type"`
+				Emails []string `json:"emails"`
+			}
+			if json.Unmarshal(data, &msg) == nil && msg.Type == "allowlist" {
+				allowed := make(map[string]bool, len(msg.Emails))
+				for _, e := range msg.Emails {
+					allowed[strings.ToLower(strings.TrimSpace(e))] = true
+				}
+				sess.mu.Lock()
+				sess.allowedEmails = allowed
+				sess.mu.Unlock()
+				continue
+			}
 		}
 		sess.mu.Lock()
 		for g := range sess.guests {
@@ -199,6 +219,18 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 	name := r.URL.Query().Get("name")
 	if name == "" {
 		name = "guest"
+	}
+
+	// Email allowlist (FR22): rejected before the WebSocket upgrade.
+	sess.mu.Lock()
+	allowed := sess.allowedEmails
+	sess.mu.Unlock()
+	if len(allowed) > 0 {
+		email := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("email")))
+		if !allowed[email] {
+			http.Error(w, "not on this session's guest list", http.StatusForbidden)
+			return
+		}
 	}
 
 	conn, err := websocket.Accept(w, r, nil)

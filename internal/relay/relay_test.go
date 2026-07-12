@@ -227,3 +227,28 @@ func TestLargeReplayFrame(t *testing.T) {
 		}
 	}
 }
+
+// TestEmailAllowlist: once the host registers an allowlist, joins are
+// rejected at the HTTP layer unless the claimed email matches (FR22).
+func TestEmailAllowlist(t *testing.T) {
+	base, host, id := setup(t)
+
+	ctx := context.Background()
+	if err := host.Write(ctx, websocket.MessageText, []byte(`{"type":"allowlist","emails":["Marcus@Example.com "]}`)); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(100 * time.Millisecond) // relay processes the instruction
+
+	dctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// No email / wrong email: rejected.
+	if _, _, err := websocket.Dial(dctx, base+"/ws/join/"+id+"?name=g", nil); err == nil {
+		t.Fatal("join without email accepted")
+	}
+	if _, _, err := websocket.Dial(dctx, base+"/ws/join/"+id+"?name=g&email=evil@x.com", nil); err == nil {
+		t.Fatal("join with wrong email accepted")
+	}
+	// Matching email (case/space-insensitive): accepted.
+	g := dial(t, base+"/ws/join/"+id+"?name=g&email=marcus%40example.com")
+	g.Close(websocket.StatusNormalClosure, "")
+}

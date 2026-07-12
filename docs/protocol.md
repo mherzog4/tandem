@@ -16,6 +16,14 @@ Session resume requires the host's resume token, which only the host
 ever receives; a guest's join URL (or a leaked session ID) grants no
 host powers.
 
+With `--allow a@x.com,…` the host registers an email guest list at the
+relay (a plaintext `allowlist` instruction — the relay must read it to
+enforce it, and it is re-sent on every reconnect). Joins with a
+non-matching email are rejected before the WebSocket upgrade. The
+email is claimed, not verified: anyone holding the full join link and
+an invited address can enter. True verification (emailed magic links)
+needs mail infrastructure and is deferred to team plans (FR22).
+
 ## Layer 2 — cryptography (e2e)
 
 Every frame is sealed with AES-256-GCM under the per-session key carried

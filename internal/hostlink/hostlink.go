@@ -52,6 +52,7 @@ type Link struct {
 	Incoming chan []byte
 
 	outbound chan []byte // sealed frames awaiting send
+	plainOut chan []byte // plaintext relay instructions (allowlist)
 	done     chan struct{}
 	closeOne sync.Once
 
@@ -60,9 +61,11 @@ type Link struct {
 	// The session broker uses it to push a composer snapshot.
 	OnGuestJoin func(name string)
 
-	mu         sync.Mutex
-	scrollback []byte
-	shuttered  bool
+	mu          sync.Mutex
+	scrollback  []byte
+	shuttered   bool
+	allowEmails []string
+	recording   bool
 }
 
 // Connect dials the relay's /ws/host endpoint, waits for the session
@@ -79,6 +82,7 @@ func Connect(ctx context.Context, relayURL string) (*Link, error) {
 		cipher:   cipher,
 		Incoming: make(chan []byte, 64),
 		outbound: make(chan []byte, outboundBuf),
+		plainOut: make(chan []byte, 8),
 		done:     make(chan struct{}),
 	}
 	conn, err := l.dial(ctx, false)
@@ -154,6 +158,7 @@ func (l *Link) run(conn *websocket.Conn) {
 				continue
 			}
 			conn = c
+			l.sendAllowlist() // relay state is per-connection; restore it
 			l.enqueueReplay() // guests may have missed frames
 			break
 		}
@@ -172,6 +177,13 @@ func (l *Link) writeLoop(conn *websocket.Conn) error {
 			if err != nil {
 				// Frame stays lost from the live stream; the reconnect
 				// replay covers guests.
+				return err
+			}
+		case msg := <-l.plainOut:
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			err := conn.Write(ctx, websocket.MessageText, msg)
+			cancel()
+			if err != nil {
 				return err
 			}
 		}
@@ -199,6 +211,13 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 				l.mu.Unlock()
 				if shuttered {
 					_ = l.WriteControl(map[string]any{"type": "shutter", "on": true})
+				}
+				// Joiners missed any earlier recording declaration (FR24).
+				l.mu.Lock()
+				rec := l.recording
+				l.mu.Unlock()
+				if rec {
+					_ = l.WriteControl(map[string]any{"type": "recording", "on": true})
 				}
 				if l.OnGuestJoin != nil {
 					l.OnGuestJoin(p.Name)
@@ -249,6 +268,39 @@ func (l *Link) Write(p []byte) (int, error) {
 	l.mu.Unlock()
 	l.enqueue(FramePTY, p)
 	return len(p), nil
+}
+
+// SetAllowlist restricts joins to the given emails (FR22). Sent to the
+// relay as a plaintext instruction — the relay must read it to enforce
+// it — and re-sent on every reconnect.
+func (l *Link) SetAllowlist(emails []string) {
+	l.mu.Lock()
+	l.allowEmails = emails
+	l.mu.Unlock()
+	l.sendAllowlist()
+}
+
+func (l *Link) sendAllowlist() {
+	l.mu.Lock()
+	emails := l.allowEmails
+	l.mu.Unlock()
+	if len(emails) == 0 {
+		return
+	}
+	msg, _ := json.Marshal(map[string]any{"type": "allowlist", "emails": emails})
+	select {
+	case l.plainOut <- msg:
+	default:
+	}
+}
+
+// SetRecording declares recording state (FR24). Broadcast to current
+// guests; joiners get it with their join notifications.
+func (l *Link) SetRecording(on bool) {
+	l.mu.Lock()
+	l.recording = on
+	l.mu.Unlock()
+	_ = l.WriteControl(map[string]any{"type": "recording", "on": on})
 }
 
 // SetShuttered toggles the privacy shutter. Guests are told the state;

@@ -67,6 +67,10 @@
   const errEl = document.getElementById("joinerr");
 
   document.getElementById("go").addEventListener("click", start);
+  document.getElementById("consentok").addEventListener("click", () => {
+    window.__recConsented = true;
+    document.getElementById("consent").style.display = "none";
+  });
   document.getElementById("name").addEventListener("keydown", (e) => {
     if (e.key === "Enter") start();
   });
@@ -100,8 +104,22 @@
     term.open(document.getElementById("term"));
 
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    const ws = new WebSocket(`${proto}://${location.host}/ws/join/${id}?name=${encodeURIComponent(name)}`);
+    const email = document.getElementById("email").value.trim();
+    const qs = `name=${encodeURIComponent(name)}` + (email ? `&email=${encodeURIComponent(email)}` : "");
+    const ws = new WebSocket(`${proto}://${location.host}/ws/join/${id}?${qs}`);
     ws.binaryType = "arraybuffer";
+
+    // Allowlisted sessions (FR22) reject the upgrade with a 403; the
+    // socket errors before opening. Reveal the email field and retry.
+    let opened = false;
+    ws.addEventListener("open", () => { opened = true; });
+    ws.addEventListener("close", () => {
+      if (opened) return;
+      appEl.style.display = "none";
+      joinEl.style.display = "flex";
+      document.getElementById("email").hidden = false;
+      errEl.textContent = "This session has a guest list — enter the email the host invited.";
+    });
 
     // Decrypt strictly in arrival order: a queue, not concurrent awaits.
     let chain = Promise.resolve();
@@ -137,6 +155,12 @@
               term.resize(ctrl.cols, ctrl.rows);
             } else if (ctrl.type === "pong" && typeof ctrl.t === "number") {
               recordRTT(ctrl.t);
+            } else if (ctrl.type === "recording") {
+              // FR24: guests must acknowledge before continuing to view.
+              if (ctrl.on && !window.__recConsented) {
+                document.getElementById("consent").style.display = "flex";
+              }
+              statusEl.textContent = ctrl.on ? "🔴 recorded session" : "live";
             } else if (ctrl.type === "shutter") {
               statusEl.textContent = ctrl.on ? "⏸ host paused sharing" : "live";
               // Full overlay: guests must never sit on a frozen frame of
