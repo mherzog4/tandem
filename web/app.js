@@ -214,6 +214,9 @@
           const msg = JSON.parse(ev.data);
           if (msg.type === "presence") {
             statusEl.textContent = `${msg.name} ${msg.event === "join" ? "joined" : "left"}`;
+            bumpRoster(msg.name, msg.event === "join" ? 1 : -1);
+          } else if (msg.type === "roster" && Array.isArray(msg.names)) {
+            setRoster(msg.names);
           }
         } catch { /* ignore malformed relay text */ }
         return;
@@ -284,6 +287,31 @@
 
     const hue = (a) => { let h = 0; for (const c of a) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
     const colorOf = (a) => `hsl(${hue(a)} 70% 65%)`;
+
+    // Presence roster: names of connected guests, kept live from the
+    // relay's roster snapshot (on join) plus join/leave deltas. Counts
+    // handle duplicate display names. The engineer is always shown since
+    // a session without a host is already dead.
+    const roster = new Map();
+    const rosterEl = document.getElementById("roster");
+    function renderRoster() {
+      const chips = [["🧑‍💻 engineer", "#3fb950"]];
+      for (const n of roster.keys()) chips.push([n, colorOf(n)]);
+      rosterEl.innerHTML = chips
+        .map(([label, color]) => `<span class="rchip"><span class="dot" style="background:${color}"></span>${esc(label)}</span>`)
+        .join("");
+    }
+    function bumpRoster(n, delta) {
+      const c = (roster.get(n) || 0) + delta;
+      if (c <= 0) roster.delete(n); else roster.set(n, c);
+      renderRoster();
+    }
+    function setRoster(names) {
+      roster.clear();
+      for (const n of names) roster.set(n, (roster.get(n) || 0) + 1);
+      renderRoster();
+    }
+    renderRoster();
 
     async function sendCtrl(obj) {
       if (ws.readyState === WebSocket.OPEN) ws.send(await sealFrame(key, FRAME_CTRL, obj));

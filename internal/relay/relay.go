@@ -304,6 +304,15 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 	sess.guests[conn] = name
+	// Presence events only flow forward, so tell the newcomer who is
+	// already here (including itself) before announcing the join.
+	names := make([]string, 0, len(sess.guests))
+	for _, n := range sess.guests {
+		names = append(names, n)
+	}
+	if rmsg, err := json.Marshal(map[string]any{"type": "roster", "names": names}); err == nil {
+		_ = writeTimeout(conn, websocket.MessageText, rmsg)
+	}
 	s.broadcastPresenceLocked(sess, Presence{Type: "presence", Event: "join", Name: name})
 	sess.mu.Unlock()
 	s.logf("relay: guest %q joined %s", name, id)

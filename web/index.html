@@ -14,6 +14,9 @@
   #bar { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: #161b22; border-bottom: 1px solid #30363d; font-size: 12px; }
   #status { color: #8b949e; }
   .badge { background: #21262d; border-radius: 10px; padding: 2px 8px; }
+  #roster { display: flex; gap: 5px; }
+  .rchip { background: #21262d; border-radius: 10px; padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 5px; }
+  .rchip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   #term { padding: 8px; }
   #app { display: none; }
   .err { color: #f85149; }
@@ -141,6 +144,7 @@
     <span class="badge">tandem</span>
     <span id="status">connecting…</span>
     <span id="who"></span>
+    <span id="roster"></span>
     <span class="badge" title="You can watch and write the prompt, but only the engineer runs it">compose-only</span>
     <span id="turnchip" class="badge chip-yours" title="Whose turn it is right now">your turn</span>
     <button id="readertoggle" style="margin-left:auto" title="Read the agent's output as clean text instead of a raw terminal">📖 reader</button>
