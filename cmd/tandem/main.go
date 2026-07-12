@@ -12,6 +12,7 @@ import (
 
 	"sync/atomic"
 
+	"github.com/mherzog4/tandem/internal/adapter"
 	"github.com/mherzog4/tandem/internal/board"
 	"github.com/mherzog4/tandem/internal/broker"
 	"github.com/mherzog4/tandem/internal/domainfile"
@@ -59,11 +60,25 @@ func main() {
 
 		// Serialize confirmed cards into the wrapped repo (FR14). The
 		// working directory is where the agent runs, so DOMAIN.md lands
-		// beside the code it describes.
+		// beside the code it describes. domainDirty flags that the model
+		// changed since the last submit, so the agent can be told to
+		// re-read it (CLAUDE.md imports load at conversation start only).
+		var domainDirty atomic.Bool
 		if cwd, err := os.Getwd(); err == nil {
 			b.OnBoardChange = func(cards []board.Card) {
-				if _, err := domainfile.WriteFiles(cwd, cards); err != nil {
+				wrote, err := domainfile.WriteFiles(cwd, cards)
+				if err != nil {
 					fmt.Fprintf(os.Stderr, "tandem: writing domain files: %v\r\n", err)
+				}
+				if wrote {
+					domainDirty.Store(true)
+				}
+			}
+			// Claude Code adapter (FR15): managed CLAUDE.md include so
+			// DOMAIN.md is in context each conversation.
+			if adapter.IsClaude(argv) {
+				if err := adapter.EnsureClaudeInclude(cwd); err != nil {
+					fmt.Fprintf(os.Stderr, "tandem: CLAUDE.md include: %v\n", err)
 				}
 			}
 		}
@@ -116,6 +131,9 @@ func main() {
 				text, _ := b.Flush()
 				if text == "" {
 					return
+				}
+				if domainDirty.Swap(false) {
+					text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
 				}
 				injector.Submit(sign.Sign(text))
 			},
