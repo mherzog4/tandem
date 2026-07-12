@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/mherzog4/tandem/web"
 )
 
 // MaxParticipants counts the host plus guests (PRD non-goal 2: no more
@@ -58,6 +59,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveHost(w, r)
 	case strings.HasPrefix(r.URL.Path, "/ws/join/"):
 		s.serveGuest(w, r, strings.TrimPrefix(r.URL.Path, "/ws/join/"))
+	case strings.HasPrefix(r.URL.Path, "/s/"):
+		// Guest client page. The session key rides the URL fragment,
+		// which the browser never sends here.
+		http.ServeFileFS(w, r, web.Assets, "index.html")
+	case strings.HasPrefix(r.URL.Path, "/static/"):
+		http.StripPrefix("/static/", http.FileServerFS(web.Assets)).ServeHTTP(w, r)
 	case r.URL.Path == "/healthz":
 		fmt.Fprintln(w, "ok")
 	default:

@@ -65,7 +65,7 @@ func TestEndToEndEncryption(t *testing.T) {
 		t.Fatal("plaintext on the wire")
 	}
 	plain, err := guestCipher.Open(wire)
-	if err != nil || string(plain) != "secret terminal bytes" {
+	if err != nil || plain[0] != FramePTY || string(plain[1:]) != "secret terminal bytes" {
 		t.Fatalf("guest decrypt: %q err=%v", plain, err)
 	}
 

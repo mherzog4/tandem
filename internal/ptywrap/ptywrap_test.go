@@ -8,7 +8,7 @@ import (
 
 func TestRunCapturesOutputAndExitCode(t *testing.T) {
 	var tap bytes.Buffer
-	code, err := Run([]string{"sh", "-c", "printf hello-from-pty; exit 7"}, &tap)
+	code, err := Run([]string{"sh", "-c", "printf hello-from-pty; exit 7"}, &tap, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -21,7 +21,7 @@ func TestRunCapturesOutputAndExitCode(t *testing.T) {
 }
 
 func TestRunZeroExit(t *testing.T) {
-	code, err := Run([]string{"true"}, nil)
+	code, err := Run([]string{"true"}, nil, nil)
 	if err != nil || code != 0 {
 		t.Fatalf("got code=%d err=%v, want 0, nil", code, err)
 	}
