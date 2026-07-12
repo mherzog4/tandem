@@ -1,0 +1,43 @@
+internal/adapter/generic.go
+  s_6f6ec78b82b8ab::t_b29f689ec3f0f9 27-57,65-66,72-86
+  s_6f6ec78b82b8ab::t_6ee6c1c653b8d1 4
+  s_7488878f86eb23::t_0baba9ae40c1af 87
+internal/adapter/generic_test.go
+  s_6f6ec78b82b8ab::t_22163e654aadd4 20-25,37-52
+  s_c0627e55f312b3::t_63e8dcb2664b7a 53-54
+docs/compat.md
+  s_6f6ec78b82b8ab::t_74680e713ce95c 15,18-28
+  s_7488878f86eb23::t_85f3c5d7699717 29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "db5ce776d52742c86bc76c96160e221ae52cf1c6",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    },
+    "s_7488878f86eb23": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "029ef87d-4c64-4ff6-892e-31020e6e88fd",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    },
+    "s_c0627e55f312b3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0a814e2cfffeOP3uUD3d0xGvoH",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
