@@ -141,3 +141,22 @@ func TestAllowlistDropsGarbage(t *testing.T) {
 		t.Fatalf("garbage mutated doc: %q", b.Doc.Text())
 	}
 }
+
+// TestOversizedInsertDropped: memory-abuse ops are rejected by the cap.
+func TestOversizedInsertDropped(t *testing.T) {
+	guest, cipher, b := setup(t)
+	readCtrl(t, guest, cipher, "composer-snapshot")
+
+	big := strings.Repeat("x", 17<<10)
+	send(t, guest, cipher, `{"type":"op","op":{"author":"m","baseRev":0,"pos":0,"ins":"`+big+`"}}`)
+	deadline := time.Now().Add(5 * time.Second)
+	for b.Dropped.Load() < 1 {
+		if time.Now().After(deadline) {
+			t.Fatal("oversized op not dropped")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if b.Doc.Text() != "" {
+		t.Fatal("oversized op mutated doc")
+	}
+}

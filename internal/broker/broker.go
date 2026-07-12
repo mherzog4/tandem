@@ -62,6 +62,12 @@ func (b *Broker) handle(frame []byte) {
 			b.Dropped.Add(1)
 			return
 		}
+		// Size caps: a hostile guest must not be able to balloon host
+		// memory through the composer. 16 KiB per insert, 256 KiB doc.
+		if len(msg.Op.Ins) > 16<<10 || len(b.Doc.Text())+len(msg.Op.Ins) > 256<<10 {
+			b.Dropped.Add(1)
+			return
+		}
 		applied, err := b.Doc.Apply(*msg.Op)
 		if err != nil {
 			b.Dropped.Add(1)
