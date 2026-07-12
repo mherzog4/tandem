@@ -35,10 +35,12 @@ Full product rationale: [prd.md](prd.md).
 - **Relay** forwards end-to-end-encrypted frames between host and guests; it
   only ever sees ciphertext (the session key lives in the join link's `#`
   fragment, which browsers never send to the server).
-- **Guest** joins in a browser — no install. Guest keystrokes and dictation go
-  to a shared, host-authoritative **Composer** buffer, never to the PTY. Only
-  the host can flush it, and only through an Ed25519 signing chokepoint. That's
-  a structural guarantee, not a filtered UI. See [docs/protocol.md](docs/protocol.md).
+- **Guest** joins in a browser — no install. What they type appears live in
+  the engineer's agent prompt; the engineer reviews it and presses `Ctrl-]` to
+  run it. Guests can never execute — their terminal is read-only and their
+  keystrokes have no path to the PTY. Only the host runs anything, and every
+  injected keystroke passes an Ed25519 signing chokepoint. That's a structural
+  guarantee, not a filtered UI. See [docs/protocol.md](docs/protocol.md).
 
 ## Install (host)
 
@@ -55,13 +57,24 @@ need nothing but a browser.
 tandem claude          # or codex, aider, gemini, or any command
 ```
 
-That's it — `tandem` connects to the hosted relay by default and prints a
-join link. Send it to your guest; the link's `#` fragment holds the
-encryption key and never reaches the relay — the relay forwards ciphertext
-only. `Ctrl-\` toggles the privacy shutter, `Ctrl-]` submits the Composer.
+`tandem` connects to the hosted relay by default, copies a join link to your
+clipboard, and pauses so you can share it before the agent takes the screen.
+Send the link to your stakeholder, then press Enter to launch.
 
-Point at a different relay with `--relay wss://your-relay.example` or the
-`TANDEM_RELAY` env var; run locally with no session via `--no-share`.
+**The loop:** they type in the browser → it appears live in your agent's
+prompt → you review or edit it → you press `Ctrl-]` to run it. They can watch
+and write the prompt but can never execute — only your keyboard runs anything.
+
+- `Ctrl-]` — run the composed prompt
+- `Ctrl-\` — privacy shutter (guest sees a paused card)
+- `--no-mirror` — don't mirror into the prompt; guests compose in a side panel
+  and `Ctrl-]` sends it
+- `--no-wait` — launch immediately instead of pausing to share the link
+- `--relay wss://…` / `TANDEM_RELAY` — use a different relay
+- `--no-share` — run locally with no session
+
+The link's `#` fragment holds the encryption key and never reaches the relay —
+it forwards ciphertext only.
 
 ## Deploy your own relay (Railway)
 
