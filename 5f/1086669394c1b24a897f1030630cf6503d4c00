@@ -1,0 +1,38 @@
+SECURITY.md
+  s_6f6ec78b82b8ab::t_24b51c7b0373fe 1-44
+.github/ISSUE_TEMPLATE/feature_request.yml
+  s_6f6ec78b82b8ab::t_6f1fe3b9f54599 1-26
+.github/ISSUE_TEMPLATE/config.yml
+  s_6f6ec78b82b8ab::t_c9045ea750ed7e 1-5
+CHANGELOG.md
+  s_6f6ec78b82b8ab::t_b867beecc0b335 1-42
+CODE_OF_CONDUCT.md
+  s_6f6ec78b82b8ab::t_586ed24ff91871 1-47
+.github/pull_request_template.md
+  s_6f6ec78b82b8ab::t_b69022c1567f6f 1-12
+LICENSE
+  s_6f6ec78b82b8ab::t_52faddf25b7468 1-21
+.github/ISSUE_TEMPLATE/bug_report.yml
+  s_6f6ec78b82b8ab::t_59e6fb213ca01b 1-43
+README.md
+  s_6f6ec78b82b8ab::t_66a6e10a6f5258 121-138
+  s_6f6ec78b82b8ab::t_39798fe2ba0f5d 1-41
+CONTRIBUTING.md
+  s_6f6ec78b82b8ab::t_ce6eb69056b350 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "5f1086669394c1b24a897f1030630cf6503d4c00",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
