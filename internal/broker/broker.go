@@ -54,6 +54,9 @@ type guestMsg struct {
 	Author string       `json:"author"`
 	Pos    int          `json:"pos"`
 	Op     *composer.Op `json:"op"`
+	X      float64      `json:"x"`
+	Y      float64      `json:"y"`
+	Emoji  string       `json:"emoji"`
 }
 
 func (b *Broker) handle(frame []byte) {
@@ -101,6 +104,23 @@ func (b *Broker) handle(frame []byte) {
 		}
 		// Relay cursor positions to everyone for colored carets.
 		_ = b.link.WriteControl(map[string]any{"type": "cursor", "author": msg.Author, "pos": msg.Pos})
+	case "highlight":
+		// Temporary pointer ring on the terminal (FR10). Coordinates are
+		// fractions of the terminal box; clamp so a hostile guest can't
+		// paint outside it.
+		if msg.Author == "" || msg.X < 0 || msg.X > 1 || msg.Y < 0 || msg.Y > 1 {
+			b.Dropped.Add(1)
+			return
+		}
+		_ = b.link.WriteControl(map[string]any{"type": "highlight", "author": msg.Author, "x": msg.X, "y": msg.Y})
+	case "react":
+		// Emoji reactions (FR10). Length-capped; content is rendered as
+		// text by clients, never as markup.
+		if msg.Author == "" || msg.Emoji == "" || len([]rune(msg.Emoji)) > 8 {
+			b.Dropped.Add(1)
+			return
+		}
+		_ = b.link.WriteControl(map[string]any{"type": "react", "author": msg.Author, "emoji": msg.Emoji})
 	default:
 		b.Dropped.Add(1)
 	}

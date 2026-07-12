@@ -160,3 +160,32 @@ func TestOversizedInsertDropped(t *testing.T) {
 		t.Fatal("oversized op mutated doc")
 	}
 }
+
+func TestHighlightAndReactRelay(t *testing.T) {
+	guest, cipher, b := setup(t)
+	readCtrl(t, guest, cipher, "composer-snapshot")
+
+	send(t, guest, cipher, `{"type":"highlight","author":"m","x":0.5,"y":0.25}`)
+	h := readCtrl(t, guest, cipher, "highlight")
+	if h["x"].(float64) != 0.5 || h["author"] != "m" {
+		t.Fatalf("highlight relay = %v", h)
+	}
+
+	send(t, guest, cipher, `{"type":"react","author":"m","emoji":"👍"}`)
+	r := readCtrl(t, guest, cipher, "react")
+	if r["emoji"] != "👍" {
+		t.Fatalf("react relay = %v", r)
+	}
+
+	// Out-of-bounds highlight and oversized emoji are dropped.
+	before := b.Dropped.Load()
+	send(t, guest, cipher, `{"type":"highlight","author":"m","x":7.5,"y":0.2}`)
+	send(t, guest, cipher, `{"type":"react","author":"m","emoji":"aaaaaaaaaaaaaaaaaa"}`)
+	deadline := time.Now().Add(5 * time.Second)
+	for b.Dropped.Load() < before+2 {
+		if time.Now().After(deadline) {
+			t.Fatalf("junk not dropped: %d", b.Dropped.Load()-before)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
