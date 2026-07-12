@@ -1,0 +1,24 @@
+web/app.js
+  s_6f6ec78b82b8ab::t_a83770c691f694 134-160
+  s_6f6ec78b82b8ab::t_06f59a72e2858b 62-89
+web/index.html
+  s_6f6ec78b82b8ab::t_7eb497121a52b8 135-136
+  s_6f6ec78b82b8ab::t_84decfc3ebef13 56-69
+  s_6f6ec78b82b8ab::t_b1438ce032ca08 142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "000d56dfb4c79c87f38444eaa4e967d0d32f9923",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
