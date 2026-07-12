@@ -15,11 +15,11 @@ import (
 
 // Defaults for a public relay; overridable via env in NewServer.
 const (
-	DefaultMaxSessions   = 200            // concurrent sessions cap
-	DefaultConnPerMinIP  = 30             // new connections per minute per IP
-	DefaultConnBurstIP   = 10             // burst allowance per IP
-	pingInterval         = 30 * time.Second
-	pingTimeout          = 10 * time.Second
+	DefaultMaxSessions  = 200 // concurrent sessions cap
+	DefaultConnPerMinIP = 30  // new connections per minute per IP
+	DefaultConnBurstIP  = 10  // burst allowance per IP
+	pingInterval        = 30 * time.Second
+	pingTimeout         = 10 * time.Second
 )
 
 // ipLimiter rate-limits new connections per client IP. Idle limiters are
@@ -106,7 +106,7 @@ func keepalive(conn interface {
 		err := conn.Ping(ctx)
 		cancel()
 		if err != nil {
-			conn.Close(websocket.StatusGoingAway, "ping timeout")
+			_ = conn.Close(websocket.StatusGoingAway, "ping timeout")
 			return
 		}
 	}

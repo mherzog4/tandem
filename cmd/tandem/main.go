@@ -91,7 +91,7 @@ func run() int {
 			fmt.Fprintln(os.Stderr, "        or run unshared with --no-share.")
 			return 1
 		}
-		defer link.Close()
+		defer func() { _ = link.Close() }()
 		b := broker.New(link)
 		go b.Run()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)

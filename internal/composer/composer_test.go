@@ -48,8 +48,8 @@ func TestConcurrentDeleteOverlap(t *testing.T) {
 	d := NewDoc()
 	apply(t, d, Op{Author: "p", BaseRev: 0, Pos: 0, Ins: "abcdef"})
 	// Both delete "cd" region concurrently from rev 1.
-	apply(t, d, Op{Author: "p", BaseRev: 1, Pos: 2, Del: 2})            // "abef"
-	apply(t, d, Op{Author: "m", BaseRev: 1, Pos: 3, Del: 2})            // wanted to delete "de"
+	apply(t, d, Op{Author: "p", BaseRev: 1, Pos: 2, Del: 2}) // "abef"
+	apply(t, d, Op{Author: "m", BaseRev: 1, Pos: 3, Del: 2}) // wanted to delete "de"
 	if d.Text() != "abf" {
 		t.Fatalf("text = %q, want abf (no double delete)", d.Text())
 	}
