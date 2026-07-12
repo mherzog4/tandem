@@ -213,6 +213,24 @@ func (b *Broker) sendSnapshot() {
 	_ = b.link.WriteControl(map[string]any{"type": "composer-snapshot", "snapshot": b.Doc.Snapshot()})
 }
 
+// ProposeCards adds extractor proposals to the board and broadcasts.
+// Cards land in the normal proposed state — the confirm flow is
+// unchanged (FR12: proposals reuse the #18 lifecycle, no parallel path).
+func (b *Broker) ProposeCards(cards []board.Card) {
+	added := false
+	for _, c := range cards {
+		if len(b.Board.Cards()) >= 200 {
+			break
+		}
+		if _, ok := b.Board.Propose(c); ok {
+			added = true
+		}
+	}
+	if added {
+		b.sendBoard()
+	}
+}
+
 // Flush returns the buffer for submission, records per-author stats,
 // clears the document, and tells every client it was sent. Only the
 // host daemon calls this — there is no guest message that reaches it.

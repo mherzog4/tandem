@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/mherzog4/tandem/internal/board"
 	"github.com/mherzog4/tandem/internal/broker"
 	"github.com/mherzog4/tandem/internal/domainfile"
+	"github.com/mherzog4/tandem/internal/extract"
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
@@ -101,14 +103,27 @@ func main() {
 				}
 			}
 		}
-		opts.Tap = link
+		// Domain extractor (FR12): watches the REDACTED transcript (the
+		// same bytes guests see, so masked secrets never reach the
+		// model) and proposes cards into the normal lifecycle. Off
+		// unless ANTHROPIC_API_KEY is set.
+		ext := extract.New(b.Board.Cards, b.ProposeCards)
+		guestStream := io.Writer(link)
+		if ext != nil {
+			go ext.Run()
+			defer ext.Close()
+			guestStream = io.MultiWriter(link, ext)
+			fmt.Fprintln(os.Stderr, "tandem: domain extractor active")
+		}
+
+		opts.Tap = guestStream
 		// Secret masking (FR23) sits between the PTY tap and the link:
 		// strictly pre-encryption, guests only. The host terminal shows
 		// originals; a bell rings when masking fires, and a count prints
 		// at session end.
 		var red *redact.Redactor
 		if !*noRedact {
-			red = redact.New(link)
+			red = redact.New(guestStream)
 			red.OnRedact = func() { fmt.Fprint(os.Stdout, "\a") }
 			opts.Tap = red
 			defer func() {
@@ -153,6 +168,9 @@ func main() {
 				}
 				if domainDirty.Swap(false) {
 					text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
+				}
+				if ext != nil {
+					ext.NoteComposer(text)
 				}
 				injector.Submit(sign.Sign(text))
 			},
