@@ -35,10 +35,17 @@ type Presence struct {
 	Name  string `json:"name"`
 }
 
+// HostGracePeriod is how long a session outlives a disconnected host so
+// a network blip doesn't kill guest links (NFR3). The host reclaims the
+// session with the resume token from its hello.
+const HostGracePeriod = 2 * time.Minute
+
 type session struct {
-	mu     sync.Mutex
-	host   *websocket.Conn
-	guests map[*websocket.Conn]string // conn -> display name
+	mu          sync.Mutex
+	host        *websocket.Conn // nil while the host is disconnected
+	guests      map[*websocket.Conn]string // conn -> display name
+	resumeToken string
+	reapTimer   *time.Timer // armed while host is disconnected
 }
 
 // Server is an http.Handler serving the relay protocol.
@@ -81,31 +88,81 @@ func newSessionID() string {
 }
 
 func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
+	resumeID := r.URL.Query().Get("resume")
+	resumeToken := r.URL.Query().Get("token")
+
+	var (
+		id   string
+		sess *session
+	)
+	if resumeID != "" {
+		// Reclaim an existing session within the grace period. Token
+		// must match: the session ID alone is in every guest's URL and
+		// must not grant host powers.
+		s.mu.Lock()
+		cand := s.sessions[resumeID]
+		s.mu.Unlock()
+		if cand == nil {
+			http.Error(w, "no such session", http.StatusNotFound)
+			return
+		}
+		cand.mu.Lock()
+		ok := cand.host == nil && cand.resumeToken == resumeToken && resumeToken != ""
+		cand.mu.Unlock()
+		if !ok {
+			http.Error(w, "resume rejected", http.StatusForbidden)
+			return
+		}
+		id, sess = resumeID, cand
+	}
+
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		return
 	}
-	id := newSessionID()
-	sess := &session{host: conn, guests: make(map[*websocket.Conn]string)}
-	s.mu.Lock()
-	s.sessions[id] = sess
-	s.mu.Unlock()
 
-	defer func() {
+	if sess == nil {
+		id = newSessionID()
+		sess = &session{host: conn, guests: make(map[*websocket.Conn]string), resumeToken: newSessionID()}
 		s.mu.Lock()
-		delete(s.sessions, id)
+		s.sessions[id] = sess
 		s.mu.Unlock()
+	} else {
 		sess.mu.Lock()
-		for g := range sess.guests {
-			g.Close(websocket.StatusGoingAway, "host left")
+		if sess.reapTimer != nil {
+			sess.reapTimer.Stop()
+			sess.reapTimer = nil
 		}
+		sess.host = conn
+		sess.mu.Unlock()
+	}
+
+	// On disconnect, keep the session for the grace period instead of
+	// tearing it down; only reap (and drop guests) if the host never
+	// comes back.
+	defer func() {
+		sess.mu.Lock()
+		sess.host = nil
+		sess.reapTimer = time.AfterFunc(HostGracePeriod, func() {
+			s.mu.Lock()
+			delete(s.sessions, id)
+			s.mu.Unlock()
+			sess.mu.Lock()
+			for g := range sess.guests {
+				g.Close(websocket.StatusGoingAway, "host left")
+			}
+			sess.mu.Unlock()
+		})
 		sess.mu.Unlock()
 		conn.Close(websocket.StatusNormalClosure, "")
 	}()
 
-	// Tell the host its session ID and join link.
+	// Tell the host its session ID, join link, and resume token.
+	sess.mu.Lock()
+	token := sess.resumeToken
+	sess.mu.Unlock()
 	hello, _ := json.Marshal(map[string]string{
-		"type": "session", "id": id, "joinURL": s.BaseURL + "/s/" + id,
+		"type": "session", "id": id, "joinURL": s.BaseURL + "/s/" + id, "resumeToken": token,
 	})
 	ctx := r.Context()
 	if err := conn.Write(ctx, websocket.MessageText, hello); err != nil {
@@ -182,7 +239,9 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 // guest. Caller holds sess.mu.
 func (s *Server) broadcastPresenceLocked(sess *session, p Presence) {
 	msg, _ := json.Marshal(p)
-	_ = writeTimeout(sess.host, websocket.MessageText, msg)
+	if sess.host != nil {
+		_ = writeTimeout(sess.host, websocket.MessageText, msg)
+	}
 	for g := range sess.guests {
 		_ = writeTimeout(g, websocket.MessageText, msg)
 	}

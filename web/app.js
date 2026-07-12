@@ -14,6 +14,7 @@
 
   const FRAME_PTY = 0x00;
   const FRAME_CTRL = 0x01;
+  const FRAME_REPLAY = 0x02; // reset terminal, then render scrollback snapshot
 
   function b64urlDecode(s) {
     s = s.replace(/-/g, "+").replace(/_/g, "/");
@@ -109,6 +110,9 @@
         const kind = plain[0];
         const body = plain.slice(1);
         if (kind === FRAME_PTY) {
+          term.write(body);
+        } else if (kind === FRAME_REPLAY) {
+          term.reset();
           term.write(body);
         } else if (kind === FRAME_CTRL) {
           try {
