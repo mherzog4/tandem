@@ -1,0 +1,11 @@
+.git
+.github
+.playwright-cli
+/tandem
+/tandem-relay
+*.cast
+DOMAIN.md
+domain.yaml
+tandem-recap-*.md
+docs
+prd.md
