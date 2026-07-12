@@ -63,7 +63,7 @@ func run() int {
 	}
 	argv := flag.Args()
 	if len(argv) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: tandem [--relay wss://host] [--no-share] <command> [args...]")
+		quickstart()
 		return 2
 	}
 
@@ -76,6 +76,13 @@ func run() int {
 	if relay == "" {
 		relay = defaultRelay
 	}
+
+	// Preflight subcommand: check the configured relay and terminal, then
+	// exit. Runs before --no-share blanks the relay so it always probes one.
+	if argv[0] == "doctor" {
+		return doctor(relay)
+	}
+
 	if *noShare {
 		relay = ""
 	}
