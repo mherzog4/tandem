@@ -189,3 +189,25 @@ func TestShutterDropsOutput(t *testing.T) {
 		}
 	}
 }
+
+// TestPingEcho: sealed guest pings come back as pongs carrying the same
+// timestamp, without reaching Incoming (FR3 probe path).
+func TestPingEcho(t *testing.T) {
+	ts := newTestSession(t)
+	guest := ts.joinGuest(t, "g")
+
+	ping := append([]byte{FrameCtrl}, []byte(`{"type":"ping","t":123.456}`)...)
+	ctx := context.Background()
+	if err := guest.Write(ctx, websocket.MessageBinary, ts.cipher.Seal(ping)); err != nil {
+		t.Fatal(err)
+	}
+	body := ts.readFrame(t, guest, FrameCtrl)
+	if !strings.Contains(string(body), `"pong"`) || !strings.Contains(string(body), "123.456") {
+		t.Fatalf("bad pong: %q", body)
+	}
+	select {
+	case got := <-ts.link.Incoming:
+		t.Fatalf("ping leaked to Incoming: %q", got)
+	case <-time.After(200 * time.Millisecond):
+	}
+}

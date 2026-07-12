@@ -202,6 +202,18 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 		if err != nil {
 			continue // tampered or foreign frame: drop, never deliver
 		}
+		// Latency pings (FR3) are echoed here so guests can measure the
+		// real round trip without involving the daemon.
+		if len(plain) > 1 && plain[0] == FrameCtrl {
+			var ctrl struct {
+				Type string          `json:"type"`
+				T    json.RawMessage `json:"t"`
+			}
+			if json.Unmarshal(plain[1:], &ctrl) == nil && ctrl.Type == "ping" {
+				_ = l.WriteControl(map[string]any{"type": "pong", "t": ctrl.T})
+				continue
+			}
+		}
 		select {
 		case l.Incoming <- plain:
 		default: // ponytail: drop on backpressure; revisit if M1 CRDT ops ever hit this
