@@ -6,6 +6,23 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-07-12
+
+### Added
+- **Guest reader mode.** A "📖 reader" toggle renders the agent's output as
+  clean, larger markdown instead of raw ANSI, reading xterm's already-resolved
+  screen buffer so TUI repaints are settled. Targets stakeholder intimidation.
+- **Guest onboarding overlay.** First-join card explaining the compose-only
+  model (you type the prompt, the engineer runs it, you can't break anything);
+  dismissal is remembered.
+- **Turn-state chip.** Shows whose turn it is — your turn / engineer reviewing /
+  engineer ran it — derived from the composer doc with no new protocol frame.
+- **Presence roster.** The bar shows who is connected (an always-present
+  engineer chip plus a colored chip per guest). The relay sends a roster
+  snapshot to each newcomer so late joiners see incumbents.
+- **Mobile-responsive guest layout.** On narrow screens the terminal stacks
+  over the composer, the bar wraps, and the board goes full-width.
+
 ## [0.2.1] — 2026-07-12
 
 ### Fixed
