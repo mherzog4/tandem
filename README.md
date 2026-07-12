@@ -93,8 +93,18 @@ the installer prints the one line to add it. Override the location with
 `TANDEM_BIN_DIR` (for example `TANDEM_BIN_DIR=/usr/local/bin`, which does need
 sudo).
 
+On a Mac you can also use Homebrew:
+
+```sh
+brew tap mherzog4/tandem https://github.com/mherzog4/tandem
+brew install tandem
+```
+
 macOS (arm64/x86_64) and Linux (x86_64/arm64). Windows runs under WSL. Guests
 need nothing but a browser.
+
+After installing, `tandem doctor` checks the relay and your terminal before
+your first session.
 
 ## Use
 

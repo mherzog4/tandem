@@ -40,3 +40,20 @@ else
     --title "$VERSION" --generate-notes
 fi
 echo "released $VERSION"
+
+# Refresh the Homebrew formula against the just-published binaries. If the
+# tree is clean the change is committed and pushed; otherwise it is left
+# for the caller to review.
+echo "updating Homebrew formula"
+if scripts/update-formula.sh "$VERSION" > HomebrewFormula/tandem.rb; then
+  if [ -z "$(git status --porcelain HomebrewFormula/tandem.rb)" ]; then
+    echo "formula already current"
+  elif [ -n "$(git status --porcelain)" ] && [ "$(git status --porcelain | grep -vc 'HomebrewFormula/tandem.rb')" != "0" ]; then
+    echo "working tree has other changes; commit HomebrewFormula/tandem.rb yourself"
+  else
+    git add HomebrewFormula/tandem.rb
+    git commit -q -m "Homebrew: update formula to $VERSION"
+    git push -q origin HEAD
+    echo "formula updated to $VERSION"
+  fi
+fi
