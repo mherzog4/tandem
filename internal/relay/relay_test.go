@@ -168,3 +168,62 @@ func TestSessionCapAndUnknownSession(t *testing.T) {
 		t.Fatal("dial to unknown session should fail")
 	}
 }
+
+// TestGuestIsolation: a guest's frames go to the host only — never to
+// other guests (the star topology is layer 1 of the gated-input
+// guarantee, see docs/protocol.md).
+func TestGuestIsolation(t *testing.T) {
+	base, _, id := setup(t)
+	g1 := dial(t, base+"/ws/join/"+id+"?name=g1")
+	defer g1.Close(websocket.StatusNormalClosure, "")
+	g2 := dial(t, base+"/ws/join/"+id+"?name=g2")
+	defer g2.Close(websocket.StatusNormalClosure, "")
+
+	ctx := context.Background()
+	if err := g1.Write(ctx, websocket.MessageBinary, []byte("guest-secret")); err != nil {
+		t.Fatal(err)
+	}
+	// g2 must see presence text frames at most — never g1's binary frame.
+	readCtx, cancel := context.WithTimeout(context.Background(), 700*time.Millisecond)
+	defer cancel()
+	for {
+		typ, data, err := g2.Read(readCtx)
+		if err != nil {
+			return // timeout: nothing leaked
+		}
+		if typ == websocket.MessageBinary {
+			t.Fatalf("guest frame leaked to another guest: %q", data)
+		}
+	}
+}
+
+// TestLargeReplayFrame: a 1 MiB host frame (scrollback replay scale)
+// traverses the relay without tripping read limits.
+func TestLargeReplayFrame(t *testing.T) {
+	base, host, id := setup(t)
+	guest := dial(t, base+"/ws/join/"+id+"?name=g")
+	defer guest.Close(websocket.StatusNormalClosure, "")
+	guest.SetReadLimit(4 << 20) // browsers impose no read limit; the Go test client does
+
+	big := make([]byte, 1<<20)
+	for i := range big {
+		big[i] = byte(i)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := host.Write(ctx, websocket.MessageBinary, big); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		typ, data, err := guest.Read(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if typ == websocket.MessageBinary {
+			if len(data) != len(big) {
+				t.Fatalf("got %d bytes, want %d", len(data), len(big))
+			}
+			return
+		}
+	}
+}

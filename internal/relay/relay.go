@@ -120,6 +120,11 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
+	// Host frames include scrollback replays (up to ~2 MiB plaintext
+	// plus seal overhead); the library default of 32 KiB would kill the
+	// connection mid-replay. Guests keep the small default — they only
+	// ever send composer ops.
+	conn.SetReadLimit(4 << 20)
 
 	if sess == nil {
 		id = newSessionID()
