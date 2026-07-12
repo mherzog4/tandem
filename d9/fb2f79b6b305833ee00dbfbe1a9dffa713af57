@@ -1,0 +1,24 @@
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_c1d928dadc0a32 259-262
+  s_6f6ec78b82b8ab::t_861eac9820fce1 78-93
+  s_6f6ec78b82b8ab::t_8ff797dff76cc8 68-71
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_e0ef156d0455d4 101
+  s_6f6ec78b82b8ab::t_780d53723d18eb 274-297,305-312
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d9fb2f79b6b305833ee00dbfbe1a9dffa713af57",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
