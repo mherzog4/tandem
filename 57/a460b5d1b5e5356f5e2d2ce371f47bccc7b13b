@@ -1,0 +1,29 @@
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_31541905380453 113-116,120
+internal/extract/extract.go
+  s_6f6ec78b82b8ab::t_dcdcd681a7b979 47-61,75-77,168-175,185-186,190-200,208-211,235-237,246,250,252,259,261
+  s_6f6ec78b82b8ab::t_2211baa3907545 241-245,247-249,251,253,255-258
+web/app.js
+  s_6f6ec78b82b8ab::t_df035028fb4509 588-621
+internal/extract/extract_test.go
+  s_6f6ec78b82b8ab::t_818741e576a22a 161-200
+web/index.html
+  s_6f6ec78b82b8ab::t_b6e6b8001a4219 51-55
+  s_6f6ec78b82b8ab::t_2ba7f064667489 125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "57a460b5d1b5e5356f5e2d2ce371f47bccc7b13b",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
