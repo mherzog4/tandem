@@ -38,6 +38,11 @@ func readJSON(t *testing.T, c *websocket.Conn) map[string]string {
 }
 
 func setup(t *testing.T) (base string, host *websocket.Conn, sessionID string) {
+	base, host, sessionID, _ = setupWithToken(t)
+	return
+}
+
+func setupWithToken(t *testing.T) (base string, host *websocket.Conn, sessionID, resumeToken string) {
 	t.Helper()
 	srv := httptest.NewServer(NewServer("http://relay.test"))
 	t.Cleanup(srv.Close)
@@ -45,13 +50,59 @@ func setup(t *testing.T) (base string, host *websocket.Conn, sessionID string) {
 	host = dial(t, base+"/ws/host")
 	t.Cleanup(func() { host.Close(websocket.StatusNormalClosure, "") })
 	hello := readJSON(t, host)
-	if hello["type"] != "session" || hello["id"] == "" {
+	if hello["type"] != "session" || hello["id"] == "" || hello["resumeToken"] == "" {
 		t.Fatalf("bad hello: %v", hello)
 	}
 	if hello["joinURL"] != "http://relay.test/s/"+hello["id"] {
 		t.Fatalf("bad joinURL: %v", hello["joinURL"])
 	}
-	return base, host, hello["id"]
+	return base, host, hello["id"], hello["resumeToken"]
+}
+
+// TestHostResume: a host that drops can reclaim its session within the
+// grace period using the resume token; guests keep their connection and
+// receive frames from the resumed host (NFR3).
+func TestHostResume(t *testing.T) {
+	base, host, id, token := setupWithToken(t)
+
+	guest := dial(t, base+"/ws/join/"+id+"?name=g")
+	defer guest.Close(websocket.StatusNormalClosure, "")
+	readJSON(t, guest) // presence join
+
+	// Host connection blips.
+	host.Close(websocket.StatusAbnormalClosure, "network blip")
+
+	// Wrong token cannot hijack the session.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, _, err := websocket.Dial(ctx, base+"/ws/host?resume="+id+"&token=wrong", nil); err == nil {
+		t.Fatal("resume with wrong token accepted")
+	}
+
+	// Correct token reclaims the same session ID.
+	host2 := dial(t, base+"/ws/host?resume="+id+"&token="+token)
+	defer host2.Close(websocket.StatusNormalClosure, "")
+	hello2 := readJSON(t, host2)
+	if hello2["id"] != id {
+		t.Fatalf("resumed session id = %q, want %q", hello2["id"], id)
+	}
+
+	// Frames from the resumed host still reach the surviving guest.
+	if err := host2.Write(ctx, websocket.MessageBinary, []byte("after-resume")); err != nil {
+		t.Fatal(err)
+	}
+	for {
+		typ, data, err := guest.Read(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if typ == websocket.MessageBinary {
+			if string(data) != "after-resume" {
+				t.Fatalf("guest got %q", data)
+			}
+			break
+		}
+	}
 }
 
 func TestHostToGuestForwardingAndPresence(t *testing.T) {
