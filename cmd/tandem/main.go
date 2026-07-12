@@ -49,7 +49,7 @@ func run() int {
 	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); overrides TANDEM_RELAY and the built-in default")
 	noShare := flag.Bool("no-share", false, "run the agent locally with no relay/session (unshared)")
 	noWait := flag.Bool("no-wait", false, "launch the agent immediately instead of pausing to share the link first")
-	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
+	noMirror := flag.Bool("no-mirror", false, "don't mirror the Composer into the agent's input line (guests then compose in the panel; Ctrl-] pastes it)")
 	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
 	allow := flag.String("allow", "", "comma-separated guest emails allowed to join (FR22; claimed, not verified)")
 	recordIntent := flag.Bool("record", false, "declare the session recorded; guests must acknowledge before viewing (FR24)")
@@ -242,6 +242,13 @@ func run() int {
 		injector := ptywrap.NewInjector(signer.NewVerifier(sign.Public()))
 		opts.Injector = injector
 
+		// Mirror is created after the launch wait (below) so nothing
+		// composed pre-launch double-injects; the submit intercept refers
+		// to it, so declare it here.
+		var mir *mirror.Mirror
+		var lastKey atomic.Int64
+		mirrorOn := !*noMirror
+
 		// Privacy shutter (FR4) on Ctrl-\. Intercepted bytes are
 		// swallowed before the child, so the wrapped TUI never sees
 		// them (it loses Ctrl-\/SIGQUIT and Ctrl-] — documented).
@@ -257,7 +264,14 @@ func run() int {
 					fmt.Fprint(os.Stdout, "\a\033]0;tandem ● sharing live\007")
 				}
 			},
-			0x1D: func() { // Ctrl-] : submit the Composer buffer
+			0x1D: func() { // Ctrl-] : RUN the composed prompt
+				// Erase the live mirror preview first, so the authoritative
+				// paste replaces it instead of doubling. Done before Flush
+				// so Flush's clear-broadcast → mir.Update("") is a no-op.
+				var clearSeq string
+				if mir != nil {
+					clearSeq = mir.ClearAndReset()
+				}
 				text, stats := b.Flush()
 				if text == "" {
 					return
@@ -278,37 +292,28 @@ func run() int {
 				if domainDirty.Swap(false) {
 					text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
 				}
-				if agentKind == adapter.KindClipboard {
-					// No agent integration: copy to the host's clipboard
-					// via OSC 52 so they paste it into whatever's running.
+				// Clipboard fallback applies only when we're NOT mirroring
+				// (mirroring is itself injection — if it's on, run the line).
+				if mir == nil && agentKind == adapter.KindClipboard {
 					fmt.Fprintf(os.Stdout, "\x1b]52;c;%s\a", base64.StdEncoding.EncodeToString([]byte(text)))
 					fmt.Fprint(os.Stderr, "\r\ntandem: composed prompt copied to clipboard — paste to send\r\n")
 					return
 				}
+				if clearSeq != "" {
+					injector.Submit(sign.SignRaw(clearSeq))
+				}
 				injector.Submit(sign.Sign(text))
+				fmt.Fprint(os.Stdout, "\a") // host cue: it ran
 			},
-		}
-
-		// Live mirroring (issue #13): opt-in, pauses while the host
-		// types, degrades to nothing worse than submit-time injection.
-		if *mirrorLive {
-			var lastKey atomic.Int64
-			opts.OnHostInput = func() { lastKey.Store(time.Now().UnixNano()) }
-			mir := mirror.New(
-				func(raw string) { injector.Submit(sign.SignRaw(raw)) },
-				func() bool { return time.Since(time.Unix(0, lastKey.Load())) < time.Second },
-			)
-			b.OnChange = mir.Update
-			// After a submit the agent clears its input line; forget
-			// the mirrored state so the next compose starts clean.
-			prevSubmit := opts.Intercepts[0x1D]
-			opts.Intercepts[0x1D] = func() { mir.Reset(); prevSubmit() }
 		}
 
 		// Auto-copy the guest link to the host's clipboard (OSC 52) so
 		// there's nothing to select by hand.
 		copyToClipboard(link.JoinURL)
 		fmt.Fprintln(os.Stderr, "tandem: guest link copied to your clipboard")
+		if mirrorOn {
+			fmt.Fprintln(os.Stderr, "tandem: guest typing appears in your prompt — review, then Ctrl-] to run it")
+		}
 
 		// Hold the agent until the host has shared the link — the agent's
 		// full-screen TUI would otherwise hide it immediately. Skipped
@@ -318,6 +323,20 @@ func run() int {
 			_, _ = link.Write([]byte("\r\n⏳ waiting for the host to start the session…\r\n"))
 			fmt.Fprintf(os.Stderr, "\ntandem: share the link, then press Enter to launch %s… ", argv[0])
 			waitForEnter()
+		}
+
+		// Start live mirroring now that the agent is about to launch:
+		// guest Composer edits inject into the agent's input line, pausing
+		// whenever the host is typing. Wiring here (post-wait) avoids
+		// double-injecting anything composed during the wait.
+		if mirrorOn {
+			opts.OnHostInput = func() { lastKey.Store(time.Now().UnixNano()) }
+			mir = mirror.New(
+				func(raw string) { injector.Submit(sign.SignRaw(raw)) },
+				func() bool { return time.Since(time.Unix(0, lastKey.Load())) < time.Second },
+			)
+			b.OnChange = mir.Update
+			mir.Update(b.Doc.Text()) // reflect anything composed during the wait
 		}
 	}
 

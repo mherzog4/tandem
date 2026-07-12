@@ -86,6 +86,19 @@ func (m *Mirror) Reset() {
 	m.mu.Unlock()
 }
 
+// ClearAndReset returns the keystrokes that erase the currently mirrored
+// preview from the agent's input line (one backspace per rune) and
+// forgets the mirrored state. Used at submit time so the authoritative
+// paste replaces the live preview instead of doubling it.
+func (m *Mirror) ClearAndReset() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	seq := strings.Repeat("\x7f", len(m.last))
+	m.last = nil
+	m.dirty = false
+	return seq
+}
+
 // sanitize replaces characters that a line editor would interpret while
 // composing. Newlines flatten to spaces; other control runes drop.
 func sanitize(s string) []rune {
