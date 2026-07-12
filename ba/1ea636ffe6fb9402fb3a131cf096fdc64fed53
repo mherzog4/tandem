@@ -1,0 +1,37 @@
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_591246ab03659a 57,59-69
+  s_6f6ec78b82b8ab::t_ff57a6de801dde 15,17
+internal/broker/broker_test.go
+  s_6f6ec78b82b8ab::t_c9ce19ca03c945 240-288
+web/app.js
+  s_6f6ec78b82b8ab::t_abf6d9cd777bf1 76
+  s_6f6ec78b82b8ab::t_2618d9335c1736 31-33
+  s_6f6ec78b82b8ab::t_83f78205031413 470-493
+internal/board/board.go
+  s_6f6ec78b82b8ab::t_e157d1e579e8ff 141-176
+internal/domainfile/domainfile.go
+  s_6f6ec78b82b8ab::t_f41e8189323bc0 1-133
+internal/broker/broker.go
+  s_6f6ec78b82b8ab::t_c022af8a5cd727 12-14,28-32,53-62,88,182-193,199-202
+  s_6f6ec78b82b8ab::t_490ef25a4bc14e 203-204
+web/index.html
+  s_6f6ec78b82b8ab::t_76f5db4693b66c 66-67
+internal/domainfile/domainfile_test.go
+  s_6f6ec78b82b8ab::t_fbdc7c5b7d010c 1-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "ba1ea636ffe6fb9402fb3a131cf096fdc64fed53",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
