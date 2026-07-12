@@ -1,0 +1,19 @@
+README.md
+  s_6f6ec78b82b8ab::t_bddff02cb25265 10-12,14-15,19-27,33-83,91,93-94,96,109-111,113-120,122-123,127-129,147,149-150,152,160-162,171-172,178-179,183-188,192-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "85115425860acb556c181831574cc525d5765396",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
