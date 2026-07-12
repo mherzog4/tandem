@@ -12,8 +12,20 @@ varies by agent — `tandem` auto-detects from the wrapped command name
 | Agent | Composer → input line | Domain injection |
 |-------|----------------------|------------------|
 | Claude Code (`claude`, `claude-*`) | live with `--mirror` (opt-in), otherwise submit-time | managed `CLAUDE.md` include importing `DOMAIN.md` |
-| Codex CLI / Gemini CLI / Aider (`codex`, `gemini`, `aider`) | submit-time; `--mirror` may work but is untested | compact confirmed-card digest prepended to each submitted prompt (≤1 KiB, overflow points to `DOMAIN.md`) |
+| Known agent CLIs (see list) | submit-time; `--mirror` may work but is untested | compact confirmed-card digest prepended to each submitted prompt (≤1 KiB, overflow points to `DOMAIN.md`) |
 | Plain shells / anything else | submit-time | **clipboard mode**: `Ctrl-]` copies the composed prompt (with dirty-model note) to the host clipboard via OSC 52 — paste it wherever. The Board and `DOMAIN.md`/`domain.yaml` stay fully functional. |
+
+**Prepend tier — recognized by binary name** (`internal/adapter/generic.go`):
+`codex`, `gemini`, `aider`, `droid` (Factory), `cursor-agent`, `amp`,
+`opencode`, `crush`, `goose`, `qwen`, `openhands`, `codebuff`, `plandex`/`pdx`,
+`grok`, `auggie`, `forge`, `continue`/`cn`, `ra-aid`, `mentat`, `kode`.
+
+Register a harness not on this list with **`TANDEM_PREPEND_AGENTS`**
+(comma-separated binary names) — no code change needed:
+
+```sh
+TANDEM_PREPEND_AGENTS=myagent,teamtool tandem myagent
+```
 
 Clipboard mode uses the OSC 52 terminal escape, which most modern
 terminals (iTerm2, kitty, tmux with `set-clipboard on`, Ghostty,

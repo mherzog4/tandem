@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -23,7 +24,37 @@ const (
 	KindClipboard
 )
 
-// Detect classifies argv into an injection Kind.
+// knownPrepend is the built-in set of terminal coding-agent CLIs that
+// get the prompt-prepend digest. Extend at runtime (no code change) with
+// TANDEM_PREPEND_AGENTS, a comma-separated list of binary names.
+var knownPrepend = map[string]bool{
+	"codex":        true, // OpenAI Codex CLI
+	"gemini":       true, // Google Gemini CLI
+	"aider":        true, // Aider
+	"droid":        true, // Factory
+	"cursor-agent": true, // Cursor CLI
+	"amp":          true, // Sourcegraph Amp
+	"opencode":     true, // OpenCode
+	"crush":        true, // Charm Crush
+	"goose":        true, // Block Goose
+	"qwen":         true, // Qwen Code
+	"openhands":    true, // OpenHands CLI
+	"codebuff":     true, // Codebuff
+	"plandex":      true, // Plandex
+	"pdx":          true, // Plandex (short)
+	"grok":         true, // Grok CLI
+	"auggie":       true, // Augment Auggie
+	"forge":        true, // Code-Forge
+	"continue":     true, // Continue CLI
+	"cn":           true, // Continue CLI (short)
+	"ra-aid":       true, // RA.Aid
+	"mentat":       true, // Mentat
+	"kode":         true, // Kode
+}
+
+// Detect classifies argv into an injection Kind. Claude Code gets the
+// managed CLAUDE.md include; other known agent CLIs get the prepend
+// digest; anything unrecognized falls back to clipboard mode.
 func Detect(argv []string) Kind {
 	if IsClaude(argv) {
 		return KindClaude
@@ -31,11 +62,27 @@ func Detect(argv []string) Kind {
 	if len(argv) == 0 {
 		return KindClipboard
 	}
-	switch filepath.Base(argv[0]) {
-	case "codex", "gemini", "aider":
+	base := filepath.Base(argv[0])
+	if knownPrepend[base] || envPrependAgents()[base] {
 		return KindPrepend
 	}
 	return KindClipboard
+}
+
+// envPrependAgents parses TANDEM_PREPEND_AGENTS into a set so operators
+// can register a harness Tandem doesn't ship a default for.
+func envPrependAgents() map[string]bool {
+	raw := os.Getenv("TANDEM_PREPEND_AGENTS")
+	if raw == "" {
+		return nil
+	}
+	set := map[string]bool{}
+	for _, a := range strings.Split(raw, ",") {
+		if a = strings.TrimSpace(a); a != "" {
+			set[a] = true
+		}
+	}
+	return set
 }
 
 // Digest renders a compact, token-budgeted domain digest from confirmed
