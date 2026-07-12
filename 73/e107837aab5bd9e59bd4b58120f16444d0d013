@@ -1,0 +1,30 @@
+internal/adapter/generic_test.go
+  s_6f6ec78b82b8ab::t_ce8770cbd94a81 1-93
+internal/adapter/generic.go
+  s_6f6ec78b82b8ab::t_47c62810d1592f 73
+  s_6f6ec78b82b8ab::t_87da2f724c84db 1-4,6-72,74-85
+  s_6f6ec78b82b8ab::t_8787f337515a5b 5
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_2cba7e8c58d9e9 8,28
+  s_6f6ec78b82b8ab::t_052d17d09eb10d 132-136,140-143
+  s_6f6ec78b82b8ab::t_1fa64ff11988c9 59
+  s_6f6ec78b82b8ab::t_4d9a7ed7b7ea0f 243-252,256-261
+docs/compat.md
+  s_6f6ec78b82b8ab::t_83c5e2ab7fe585 8-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "73e107837aab5bd9e59bd4b58120f16444d0d013",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
