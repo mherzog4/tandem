@@ -1,0 +1,23 @@
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_2f59502a200642 36-40
+  s_6f6ec78b82b8ab::t_303a95dc36d4dd 47-48,61,65-77,80
+  s_6f6ec78b82b8ab::t_6c80a17589b042 82,85-88
+README.md
+  s_6f6ec78b82b8ab::t_bc583e1d419578 20,23-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "03f6ddecdfde5fc6f77d3dce70df2be41b838836",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
