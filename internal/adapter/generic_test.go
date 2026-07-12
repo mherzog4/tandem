@@ -17,6 +17,12 @@ func TestDetect(t *testing.T) {
 		{[]string{"codex"}, KindPrepend},
 		{[]string{"gemini", "chat"}, KindPrepend},
 		{[]string{"/opt/bin/aider"}, KindPrepend},
+		{[]string{"droid"}, KindPrepend},         // Factory
+		{[]string{"cursor-agent"}, KindPrepend},  // Cursor
+		{[]string{"amp"}, KindPrepend},           // Sourcegraph Amp
+		{[]string{"opencode", "run"}, KindPrepend},
+		{[]string{"/usr/bin/goose"}, KindPrepend},
+		{[]string{"crush"}, KindPrepend},
 		{[]string{"bash"}, KindClipboard},
 		{[]string{"python", "repl.py"}, KindClipboard},
 		{nil, KindClipboard},
@@ -25,6 +31,24 @@ func TestDetect(t *testing.T) {
 		if got := Detect(c.argv); got != c.want {
 			t.Errorf("Detect(%v) = %d, want %d", c.argv, got, c.want)
 		}
+	}
+}
+
+func TestDetectEnvOverride(t *testing.T) {
+	// An unknown harness falls back to clipboard...
+	if Detect([]string{"myagent"}) != KindClipboard {
+		t.Fatal("unknown agent should be clipboard by default")
+	}
+	// ...unless registered via the env var.
+	t.Setenv("TANDEM_PREPEND_AGENTS", "myagent, another-agent")
+	if Detect([]string{"myagent"}) != KindPrepend {
+		t.Fatal("env-registered agent should be prepend")
+	}
+	if Detect([]string{"/path/to/another-agent"}) != KindPrepend {
+		t.Fatal("env-registered agent (with path) should be prepend")
+	}
+	if Detect([]string{"bash"}) != KindClipboard {
+		t.Fatal("env override should not affect other commands")
 	}
 }
 
