@@ -129,6 +129,25 @@
   #cfoot button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
   #cmic.rec { background: #da3633; border-color: #f85149; }
   #cmic[hidden] { display: none; }
+
+  /* Narrow screens (phones): stack the terminal over the composer instead
+     of the desktop side-by-side, let the crowded bar wrap, and give the
+     board the full width since the composer no longer sits on the right. */
+  @media (max-width: 700px) {
+    body { overflow-x: hidden; } /* terminal scrolls inside #termwrap, never the page */
+    #bar { flex-wrap: wrap; row-gap: 4px; }
+    #main { flex-direction: column; height: auto; min-height: calc(100vh - 31px); }
+    /* The terminal keeps the host's fixed column count, so it can be wider
+       than a phone. Scroll it inside its own box rather than the page. */
+    #termwrap { flex: 1 1 52vh; min-height: 200px; overflow: auto; }
+    #composer { width: auto; flex: 1 1 42vh; min-height: 170px; border-left: 0; border-top: 1px solid #30363d; }
+    #board { right: 0; height: 46vh; }
+    #cardform { flex-wrap: wrap; }
+    #cardform input { width: 120px; }
+    #reader { padding: 14px 16px; }
+    #reader .md { font-size: 16px; }
+    #onboard .card { max-width: 92vw; padding: 22px 22px; }
+  }
 </style>
 </head>
 <body>
