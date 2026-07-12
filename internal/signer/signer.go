@@ -20,10 +20,14 @@ import (
 	"errors"
 )
 
-// SignedText is a submission the injector can verify.
+// SignedText is a submission the injector can verify. Raw marks mirror
+// keystrokes (written verbatim, no submit); the flag is part of the
+// signed payload so a captured frame cannot be replayed in the other
+// mode.
 type SignedText struct {
 	Seq  uint64
 	Text string
+	Raw  bool
 	Sig  []byte
 }
 
@@ -45,10 +49,15 @@ func New() (*Signer, error) {
 // Public returns the verify key to hand the injector.
 func (s *Signer) Public() ed25519.PublicKey { return s.pub }
 
-// Sign stamps text with the next sequence number.
-func (s *Signer) Sign(text string) SignedText {
+// Sign stamps text with the next sequence number (submit mode).
+func (s *Signer) Sign(text string) SignedText { return s.sign(text, false) }
+
+// SignRaw stamps raw mirror keystrokes.
+func (s *Signer) SignRaw(text string) SignedText { return s.sign(text, true) }
+
+func (s *Signer) sign(text string, raw bool) SignedText {
 	s.seq++
-	return SignedText{Seq: s.seq, Text: text, Sig: ed25519.Sign(s.priv, payload(s.seq, text))}
+	return SignedText{Seq: s.seq, Text: text, Raw: raw, Sig: ed25519.Sign(s.priv, payload(s.seq, text, raw))}
 }
 
 // Verifier checks submissions; it holds only the public key.
@@ -67,7 +76,7 @@ var (
 // Verify returns nil only for an authentic, never-before-seen
 // submission, and then advances the replay floor.
 func (v *Verifier) Verify(st SignedText) error {
-	if !ed25519.Verify(v.pub, payload(st.Seq, st.Text), st.Sig) {
+	if !ed25519.Verify(v.pub, payload(st.Seq, st.Text, st.Raw), st.Sig) {
 		return ErrBadSignature
 	}
 	if st.Seq <= v.lastSeq {
@@ -77,9 +86,12 @@ func (v *Verifier) Verify(st SignedText) error {
 	return nil
 }
 
-func payload(seq uint64, text string) []byte {
-	buf := make([]byte, 8+len(text))
+func payload(seq uint64, text string, raw bool) []byte {
+	buf := make([]byte, 9+len(text))
 	binary.BigEndian.PutUint64(buf, seq)
-	copy(buf[8:], text)
+	if raw {
+		buf[8] = 1
+	}
+	copy(buf[9:], text)
 	return buf
 }

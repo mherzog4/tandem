@@ -34,6 +34,9 @@ type Options struct {
 	// (the Composer buffer) may reach the child's stdin. Every
 	// submission is signature-verified first (FR21).
 	Injector *Injector
+	// OnHostInput fires whenever the host's own keystrokes flow to the
+	// child. The mirror layer uses it to yield while the host types.
+	OnHostInput func()
 }
 
 // Run executes argv inside a PTY, wiring the current process's terminal
@@ -75,10 +78,17 @@ func Run(argv []string, opts Options) (int, error) {
 
 	// Host stdin -> PTY: the host's own keystrokes, forwarded directly.
 	go func() {
+		var dst io.Writer = ptmx
+		if opts.OnHostInput != nil {
+			dst = writerFunc(func(p []byte) (int, error) {
+				opts.OnHostInput()
+				return ptmx.Write(p)
+			})
+		}
 		if len(opts.Intercepts) > 0 {
-			_ = copyIntercept(ptmx, os.Stdin, opts.Intercepts)
+			_ = copyIntercept(dst, os.Stdin, opts.Intercepts)
 		} else {
-			_, _ = io.Copy(ptmx, os.Stdin)
+			_, _ = io.Copy(dst, os.Stdin)
 		}
 	}()
 
@@ -139,6 +149,10 @@ func copyIntercept(dst io.Writer, src io.Reader, keys map[byte]func()) error {
 		}
 	}
 }
+
+type writerFunc func(p []byte) (int, error)
+
+func (f writerFunc) Write(p []byte) (int, error) { return f(p) }
 
 // bytesIndexFunc returns the first index whose byte has a handler.
 func bytesIndexFunc(b []byte, keys map[byte]func()) int {

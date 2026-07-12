@@ -23,6 +23,16 @@ type Broker struct {
 	// Dropped counts guest frames rejected by the allowlist — a spike is
 	// a probe signal worth surfacing later.
 	Dropped atomic.Int64
+
+	// OnChange, if set, fires with the new buffer text after every
+	// applied edit (op, undo, flush). The mirror layer subscribes.
+	OnChange func(text string)
+}
+
+func (b *Broker) changed() {
+	if b.OnChange != nil {
+		b.OnChange(b.Doc.Text())
+	}
 }
 
 func New(link *hostlink.Link) *Broker {
@@ -74,6 +84,7 @@ func (b *Broker) handle(frame []byte) {
 			return
 		}
 		_ = b.link.WriteControl(map[string]any{"type": "composer-op", "op": applied})
+		b.changed()
 	case "undo":
 		if msg.Author == "" {
 			b.Dropped.Add(1)
@@ -81,6 +92,7 @@ func (b *Broker) handle(frame []byte) {
 		}
 		if applied, ok := b.Doc.Undo(msg.Author); ok {
 			_ = b.link.WriteControl(map[string]any{"type": "composer-op", "op": applied})
+			b.changed()
 		}
 	case "cursor":
 		if msg.Author == "" {
