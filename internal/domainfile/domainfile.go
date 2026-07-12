@@ -105,6 +105,76 @@ func RenderYAML(cards []board.Card) string {
 	return b.String()
 }
 
+// Load reads domain.yaml from dir and returns the cards as confirmed —
+// the next session opens with the model accreted so far (FR20). The
+// parser is tolerant: it reads the format WriteFiles produces, skips
+// anything it cannot parse, and returns whatever it recovered. A
+// missing file is not an error.
+func Load(dir string) ([]board.Card, error) {
+	data, err := os.ReadFile(filepath.Join(dir, YAMLName))
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	typeByKey := map[string]string{}
+	for _, sec := range sections {
+		typeByKey[sec.yamlKey] = sec.cardType
+	}
+
+	var cards []board.Card
+	var cur *board.Card
+	curType := ""
+	flush := func() {
+		if cur != nil && cur.ID != "" && cur.Text != "" {
+			cards = append(cards, *cur)
+		}
+		cur = nil
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case strings.HasPrefix(trimmed, "#") || trimmed == "" || strings.HasPrefix(trimmed, "version:"):
+			continue
+		case !strings.HasPrefix(line, " "): // section header
+			flush()
+			curType = typeByKey[strings.TrimSuffix(trimmed, ":")]
+		case strings.HasPrefix(trimmed, "- id:"):
+			flush()
+			if curType == "" {
+				continue
+			}
+			cur = &board.Card{Type: curType, State: board.StateConfirmed}
+			cur.ID = unquote(strings.TrimSpace(strings.TrimPrefix(trimmed, "- id:")))
+		case cur != nil:
+			k, v, ok := strings.Cut(trimmed, ":")
+			if !ok {
+				continue
+			}
+			val := unquote(strings.TrimSpace(v))
+			switch strings.TrimSpace(k) {
+			case "name":
+				cur.Text = val
+			case "code":
+				cur.CodeName = val
+			case "author":
+				cur.Author = val
+			}
+		}
+	}
+	flush()
+	return cards, nil
+}
+
+func unquote(s string) string {
+	if u, err := strconv.Unquote(s); err == nil {
+		return u
+	}
+	return s
+}
+
 // WriteFiles updates DOMAIN.md and domain.yaml in dir, skipping writes
 // whose content is unchanged. Files are only created once at least one
 // card has been confirmed — Tandem never litters a repo it was merely

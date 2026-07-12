@@ -76,3 +76,44 @@ func TestWriteFilesStable(t *testing.T) {
 		t.Fatal("demoted card still serialized")
 	}
 }
+
+// TestRoundTrip: WriteFiles then Load recovers the confirmed cards with
+// order, aliases, and authors intact (FR20).
+func TestRoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := WriteFiles(dir, sampleCards()); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 3 { // proposed card excluded
+		t.Fatalf("loaded %d cards: %+v", len(got), got)
+	}
+	if got[0].Text != "Claim Filed" || got[1].Text != "Claim Denied" {
+		t.Fatalf("event order lost: %+v", got)
+	}
+	if got[1].CodeName != "ClaimDenied" || got[1].Author != "marcus" || got[1].State != board.StateConfirmed {
+		t.Fatalf("fields lost: %+v", got[1])
+	}
+	if got[2].Type != board.TypeTerm {
+		t.Fatalf("type lost: %+v", got[2])
+	}
+}
+
+func TestLoadMissingAndMalformed(t *testing.T) {
+	if cards, err := Load(t.TempDir()); err != nil || cards != nil {
+		t.Fatalf("missing file: cards=%v err=%v", cards, err)
+	}
+
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, YAMLName), []byte("version: 99\nnot yaml at all {{{\nevents:\n  - id: \"ok1\"\n    name: \"Survivor\"\n  - broken entry\n  - id: \"\"\n    name: \"no id\"\n"), 0o644)
+	cards, err := Load(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cards) != 1 || cards[0].Text != "Survivor" {
+		t.Fatalf("tolerant parse got %+v", cards)
+	}
+}

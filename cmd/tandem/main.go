@@ -65,6 +65,14 @@ func main() {
 		// re-read it (CLAUDE.md imports load at conversation start only).
 		var domainDirty atomic.Bool
 		if cwd, err := os.Getwd(); err == nil {
+			// Preload the Board from a previous session's domain.yaml
+			// (FR20): the model accretes across meetings.
+			if cards, err := domainfile.Load(cwd); err != nil {
+				fmt.Fprintf(os.Stderr, "tandem: reading %s: %v (starting with an empty board)\n", domainfile.YAMLName, err)
+			} else if len(cards) > 0 {
+				b.Board.Load(cards)
+				fmt.Fprintf(os.Stderr, "tandem: domain board preloaded — %d confirmed card(s) from %s\n", len(cards), domainfile.YAMLName)
+			}
 			b.OnBoardChange = func(cards []board.Card) {
 				wrote, err := domainfile.WriteFiles(cwd, cards)
 				if err != nil {
