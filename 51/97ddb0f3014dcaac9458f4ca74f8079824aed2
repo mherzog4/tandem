@@ -1,0 +1,25 @@
+README.md
+  s_6f6ec78b82b8ab::t_78ba5b461d308f 2-39
+.github/workflows/release.yml
+  s_6f6ec78b82b8ab::t_e686c1db28ebf8 1-50
+.github/workflows/ci.yml
+  s_6f6ec78b82b8ab::t_679d0818931393 1-20
+scripts/install.sh
+  s_6f6ec78b82b8ab::t_85445cf65204cb 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "5197ddb0f3014dcaac9458f4ca74f8079824aed2",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
