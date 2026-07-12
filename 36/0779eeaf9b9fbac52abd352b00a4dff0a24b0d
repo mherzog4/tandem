@@ -1,0 +1,29 @@
+go.mod
+  s_6f6ec78b82b8ab::t_2e26f2269d4c8d 1-3
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_cfc6ab4b7a77e5 1-21
+CLAUDE.md
+  s_6f6ec78b82b8ab::t_40f33c18b12434 7-22
+cmd/relay/main.go
+  s_6f6ec78b82b8ab::t_4386fac5d5cf14 1-20
+web/README.md
+  s_6f6ec78b82b8ab::t_c34b8c8059bebf 1-6
+.gitignore
+  s_6f6ec78b82b8ab::t_5888a9f5736e1a 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "360779eeaf9b9fbac52abd352b00a4dff0a24b0d",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
