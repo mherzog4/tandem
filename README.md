@@ -48,6 +48,10 @@ Full product rationale: [prd.md](prd.md).
 curl -fsSL https://raw.githubusercontent.com/mherzog4/tandem/main/scripts/install.sh | sh
 ```
 
+Installs to `~/.local/bin` — **no sudo**. If that dir isn't on your `PATH`,
+the installer prints the one line to add it. Override the location with
+`TANDEM_BIN_DIR` (e.g. `TANDEM_BIN_DIR=/usr/local/bin`, which needs sudo).
+
 macOS (arm64/x86_64) and Linux (x86_64/arm64). Windows via WSL. Guests
 need nothing but a browser.
 
