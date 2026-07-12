@@ -3,6 +3,7 @@ package relay
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -251,4 +252,97 @@ func TestEmailAllowlist(t *testing.T) {
 	// Matching email (case/space-insensitive): accepted.
 	g := dial(t, base+"/ws/join/"+id+"?name=g&email=marcus%40example.com")
 	g.Close(websocket.StatusNormalClosure, "")
+}
+
+// TestSessionCap: once MaxSessions is reached, new hosts are rejected
+// with 503, but existing sessions keep working.
+func TestSessionCap(t *testing.T) {
+	srv := httptest.NewServer(NewServer("http://relay.test"))
+	defer srv.Close()
+	// Force a tiny cap.
+	// (NewServer read env; override the field via a second server.)
+	s := NewServer("http://relay.test")
+	s.MaxSessions = 1
+	srv2 := httptest.NewServer(s)
+	defer srv2.Close()
+	base := "ws" + strings.TrimPrefix(srv2.URL, "http")
+
+	h1 := dial(t, base+"/ws/host")
+	defer h1.Close(websocket.StatusNormalClosure, "")
+	readJSON(t, h1) // hello — session 1 created
+
+	// Second host exceeds the cap → dial fails at the HTTP layer (503).
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, _, err := websocket.Dial(ctx, base+"/ws/host", nil); err == nil {
+		t.Fatal("host past the cap was accepted")
+	}
+}
+
+func TestIPLimiter(t *testing.T) {
+	l := newIPLimiter(60, 3) // 1/sec, burst 3
+	ip := "1.2.3.4"
+	allowed := 0
+	for i := 0; i < 10; i++ {
+		if l.allow(ip) {
+			allowed++
+		}
+	}
+	if allowed != 3 {
+		t.Fatalf("burst allowed %d, want 3", allowed)
+	}
+	// A different IP has its own bucket.
+	if !l.allow("5.6.7.8") {
+		t.Fatal("second IP should not be rate-limited by the first")
+	}
+}
+
+func TestClientIPForwardedFor(t *testing.T) {
+	r := httptest.NewRequest("GET", "/ws/host", nil)
+	r.RemoteAddr = "10.0.0.1:5555" // the proxy
+	r.Header.Set("X-Forwarded-For", "203.0.113.9, 10.0.0.1")
+	if got := clientIP(r); got != "203.0.113.9" {
+		t.Fatalf("clientIP = %q, want the leftmost XFF entry", got)
+	}
+	r2 := httptest.NewRequest("GET", "/ws/host", nil)
+	r2.RemoteAddr = "198.51.100.2:4444"
+	if got := clientIP(r2); got != "198.51.100.2" {
+		t.Fatalf("clientIP = %q, want RemoteAddr host", got)
+	}
+}
+
+func TestEnvInt(t *testing.T) {
+	env := map[string]string{"A": "42", "B": "-1", "C": "notnum"}
+	get := func(k string) string { return env[k] }
+	if envInt(get, "A", 7) != 42 || envInt(get, "B", 7) != 7 || envInt(get, "C", 7) != 7 || envInt(get, "Z", 7) != 7 {
+		t.Fatal("envInt precedence wrong")
+	}
+}
+
+// TestRateLimitGate: the ServeHTTP gate returns 429 once an IP's burst
+// is spent (checked via plain HTTP GETs to /ws/host, which the limiter
+// gates before the WebSocket upgrade).
+func TestRateLimitGate(t *testing.T) {
+	s := NewServer("http://relay.test")
+	s.limiter = newIPLimiter(1, 2) // burst 2
+	srv := httptest.NewServer(s)
+	defer srv.Close()
+
+	got429 := false
+	for i := 0; i < 6; i++ {
+		// Non-WebSocket GET: fails the upgrade but passes the rate gate
+		// first, so a 429 means the gate fired (else 400/426 upgrade err).
+		resp, err := http.Get(srv.URL + "/ws/host")
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusTooManyRequests {
+			got429 = true
+			break
+		}
+	}
+	if !got429 {
+		t.Fatal("rate-limit gate never returned 429")
+	}
 }
