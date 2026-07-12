@@ -6,6 +6,23 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-12
+
+### Added
+- **Join approval (waiting room), `--approve`.** Holds each guest until the
+  engineer admits it with `Ctrl-G`, defending against leaked links. Guests
+  see a "waiting to be admitted" overlay until let in.
+- **Go fuzz targets** for the untrusted-input surfaces: composer OT apply,
+  redaction, e2e frame open/seal, and the broker message allowlist.
+- **CI security gates**: gofmt check, golangci-lint, govulncheck, and a
+  Dependabot config.
+- **Web-client unit tests** (Node's test runner) over the guest client's
+  frame crypto, Jupiter rebase, and input diff, run in CI.
+
+### Changed
+- The guest client's pure helpers now live in `web/lib.js` (loaded before
+  `app.js`) so they can be tested outside the browser. No behavior change.
+
 ## [0.3.0] — 2026-07-12
 
 ### Added

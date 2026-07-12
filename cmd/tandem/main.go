@@ -98,7 +98,7 @@ func run() int {
 		go b.Run()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
 		fmt.Fprintf(os.Stderr, "tandem: your host link (confirm powers, keep private) %s&h=%s\n", link.JoinURL, b.HostToken)
-		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer")
+		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer · Ctrl-^ re-copy join link")
 		if *allow != "" {
 			link.SetAllowlist(strings.Split(*allow, ","))
 			fmt.Fprintln(os.Stderr, "tandem: guest allowlist active (emails are claimed, not verified)")
@@ -271,20 +271,45 @@ func run() int {
 		var lastKey atomic.Int64
 		mirrorOn := !*noMirror
 
+		// Terminal title presence: composed from the sharing state and the
+		// live guest count, refreshed whenever either changes. Written as an
+		// OSC title sequence so it never corrupts the wrapped TUI's screen.
+		var titleMu sync.Mutex
+		shuttered := false
+		guestN := 0
+		setTitle := func() {
+			titleMu.Lock()
+			defer titleMu.Unlock()
+			state := "● sharing live"
+			if shuttered {
+				state = "⏸ SHARING PAUSED"
+			}
+			guests := ""
+			switch {
+			case guestN == 1:
+				guests = " · 1 guest"
+			case guestN > 1:
+				guests = fmt.Sprintf(" · %d guests", guestN)
+			}
+			fmt.Fprintf(os.Stdout, "\033]0;tandem %s%s\007", state, guests)
+		}
+		link.OnGuestChange = func(n int) { guestN = n; setTitle() }
+
 		// Privacy shutter (FR4) on Ctrl-\. Intercepted bytes are
 		// swallowed before the child, so the wrapped TUI never sees
 		// them (it loses Ctrl-\/SIGQUIT and Ctrl-] — documented).
-		shuttered := false
 		opts.Intercepts = map[byte]func(){
 			0x1C: func() { // Ctrl-\ : shutter
 				shuttered = !shuttered
 				link.SetShuttered(shuttered)
-				if shuttered {
-					// Bell + title: visible without corrupting the TUI.
-					fmt.Fprint(os.Stdout, "\a\033]0;tandem ⏸ SHARING PAUSED\007")
-				} else {
-					fmt.Fprint(os.Stdout, "\a\033]0;tandem ● sharing live\007")
-				}
+				fmt.Fprint(os.Stdout, "\a") // bell: state changed
+				setTitle()
+			},
+			0x1E: func() { // Ctrl-^ : re-copy the join link to the clipboard
+				copyToClipboard(link.JoinURL)
+				titleMu.Lock()
+				fmt.Fprint(os.Stdout, "\a\033]0;tandem ● link copied\007")
+				titleMu.Unlock()
 			},
 			0x1D: func() { // Ctrl-] : RUN the composed prompt
 				// Erase the live mirror preview first, so the authoritative

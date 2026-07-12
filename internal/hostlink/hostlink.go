@@ -65,12 +65,32 @@ type Link struct {
 	// (approval mode). The host CLI surfaces it and calls Admit/Deny.
 	OnJoinRequest func(name, cid string)
 
+	// OnGuestChange, if set, fires with the live guest count whenever a
+	// guest joins or leaves. The host CLI uses it for title-bar presence.
+	OnGuestChange func(count int)
+
 	mu          sync.Mutex
 	scrollback  []byte
 	shuttered   bool
 	allowEmails []string
 	recording   bool
 	approval    bool
+	guestCount  int
+}
+
+// bumpGuests adjusts the live guest count and notifies OnGuestChange.
+func (l *Link) bumpGuests(delta int) {
+	l.mu.Lock()
+	l.guestCount += delta
+	if l.guestCount < 0 {
+		l.guestCount = 0
+	}
+	n := l.guestCount
+	cb := l.OnGuestChange
+	l.mu.Unlock()
+	if cb != nil {
+		cb(n)
+	}
 }
 
 // Connect dials the relay's /ws/host endpoint, waits for the session
@@ -236,6 +256,10 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 				if l.OnGuestJoin != nil {
 					l.OnGuestJoin(p.Name)
 				}
+				l.bumpGuests(1)
+			}
+			if p.Type == "presence" && p.Event == "leave" {
+				l.bumpGuests(-1)
 			}
 			continue
 		}
