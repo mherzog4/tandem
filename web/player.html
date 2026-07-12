@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tandem replay</title>
+<link rel="stylesheet" href="/static/vendor/xterm.min.css">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0d1117; color: #e6edf3; font: 14px system-ui, sans-serif; }
+  header { display: flex; gap: 12px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #30363d; }
+  header h1 { font-size: 15px; margin: 0; }
+  #drop { border: 2px dashed #30363d; border-radius: 10px; padding: 40px; text-align: center; margin: 40px auto; max-width: 520px; color: #8b949e; }
+  #drop.over { border-color: #58a6ff; color: #e6edf3; }
+  #main { display: none; }
+  #stage { display: flex; gap: 8px; padding: 8px; }
+  #term { flex: 1; min-width: 0; }
+  #side { width: 320px; border-left: 1px solid #30363d; padding: 8px; overflow: auto; }
+  #side h3 { font-size: 12px; text-transform: uppercase; color: #8b949e; margin: 8px 0 4px; }
+  #composer { white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, Menlo, monospace; background: #10151c; border-radius: 6px; padding: 8px; min-height: 40px; }
+  .lane .cards { display: flex; flex-direction: column; gap: 4px; }
+  .pcard { border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+  .pcard[data-type="event"] { background: #7a3e00; }
+  .pcard[data-type="command"] { background: #123b6b; }
+  .pcard[data-type="actor"] { background: #6b5900; }
+  .pcard[data-type="term"] { background: #472a78; }
+  #controls { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid #30363d; }
+  #controls button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+  #scrub { flex: 1; }
+  #clock { color: #8b949e; font: 12px ui-monospace, Menlo, monospace; min-width: 90px; }
+</style>
+</head>
+<body>
+<header><h1>Tandem replay</h1><span id="fname" style="color:#8b949e"></span></header>
+<div id="drop">Drop a <code>.cast</code> file here, or <input type="file" id="file" accept=".cast"></div>
+<div id="main">
+  <div id="stage">
+    <div id="term"></div>
+    <div id="side">
+      <h3>Prompt Composer</h3>
+      <div id="composer"></div>
+      <h3>Domain Board</h3>
+      <div class="lane"><div class="cards" id="cards"></div></div>
+    </div>
+  </div>
+  <div id="controls">
+    <button id="play">▶</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0">
+    <span id="clock">0.0s / 0.0s</span>
+  </div>
+</div>
+<script src="/static/vendor/xterm.min.js"></script>
+<script src="/static/player.js"></script>
+</body>
+</html>

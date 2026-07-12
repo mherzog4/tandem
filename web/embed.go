@@ -4,5 +4,5 @@ package web
 
 import "embed"
 
-//go:embed index.html app.js vendor
+//go:embed index.html app.js player.html player.js vendor
 var Assets embed.FS
