@@ -43,6 +43,8 @@ anything else is dropped and counted (`Broker.Dropped`):
 | `op` | `op: {author, baseRev, pos, del, ins}` | edit the Composer document (positions clamped, inserts capped at 16 KiB, document capped at 256 KiB) |
 | `undo` | `author` | revert that author's latest surviving insert |
 | `cursor` | `author, pos` | rebroadcast caret position to all clients |
+| `highlight` | `author, x, y` | rebroadcast pointer ring (coordinates clamped to [0,1]) |
+| `react` | `author, emoji` | rebroadcast emoji reaction (≤8 runes, rendered as text) |
 | `ping` | `t` | echoed as `pong` by the hostlink read loop (latency probe) |
 
 There is no guest message that reaches the PTY. The PTY's stdin has

@@ -353,6 +353,71 @@
       }, 200);
     });
 
+    // ---- Pointing (FR10) and raise-hand (FR11) --------------------
+    const pointerLayer = document.getElementById("pointer-layer");
+    const termwrap = document.getElementById("termwrap");
+
+    function showPing(author, fx, fy) {
+      const el = document.createElement("div");
+      el.className = "ping";
+      el.style.borderColor = colorOf(author);
+      el.style.left = `${fx * 100}%`;
+      el.style.top = `${fy * 100}%`;
+      const label = document.createElement("small");
+      label.textContent = author;
+      label.style.color = colorOf(author);
+      el.appendChild(label);
+      pointerLayer.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+
+    // Alt-click (or double-click) the terminal to point at it.
+    termwrap.addEventListener("click", (ev) => {
+      if (!ev.altKey) return;
+      const r = termwrap.getBoundingClientRect();
+      const fx = (ev.clientX - r.left) / r.width;
+      const fy = (ev.clientY - r.top) / r.height;
+      showPing(name, fx, fy); // local echo
+      sendCtrl({ type: "highlight", author: name, x: fx, y: fy });
+    });
+
+    const reactionsEl = document.getElementById("reactions");
+    function showReaction(author, emoji) {
+      const el = document.createElement("div");
+      el.className = "react-item";
+      el.textContent = `${emoji} ${author}`;
+      reactionsEl.appendChild(el);
+      setTimeout(() => el.remove(), 4100);
+    }
+    document.querySelectorAll("#reactbar button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        showReaction(name, btn.dataset.emoji); // local echo
+        sendCtrl({ type: "react", author: name, emoji: btn.dataset.emoji });
+      });
+    });
+
+    // Raise hand on text (FR11): select agent output, quote it into the
+    // Composer as a correction the pair can edit and send. Uses the
+    // normal op path — no new privileged message type.
+    const quoteBtn = document.getElementById("quotebtn");
+    term.onSelectionChange(() => {
+      quoteBtn.hidden = term.getSelection().trim() === "";
+    });
+    quoteBtn.addEventListener("click", () => {
+      const sel = term.getSelection().trim();
+      if (!sel) return;
+      const quoted = `> "${sel}" — `;
+      cinput.focus();
+      const end = cinput.value.length;
+      cinput.setSelectionRange(end, end);
+      if (!document.execCommand("insertText", false, (end ? "\n" : "") + quoted)) {
+        cinput.value += (end ? "\n" : "") + quoted;
+        cinput.dispatchEvent(new Event("input"));
+      }
+      quoteBtn.hidden = true;
+    });
+    // ---------------------------------------------------------------
+
     function handleComposerCtrl(ctrl) {
       if (ctrl.type === "composer-op" && ctrl.op) {
         applyOp(ctrl.op);
@@ -379,6 +444,10 @@
         renderMirror();
       } else if (ctrl.type === "submitted") {
         statusEl.textContent = "prompt sent ✓";
+      } else if (ctrl.type === "highlight" && ctrl.author !== name) {
+        showPing(ctrl.author, ctrl.x, ctrl.y);
+      } else if (ctrl.type === "react" && ctrl.author !== name) {
+        showReaction(ctrl.author, ctrl.emoji);
       } else if (ctrl.type === "cursor" && ctrl.author) {
         comp.cursors[ctrl.author] = ctrl.pos;
         renderMirror();

@@ -23,7 +23,23 @@
                    border-radius: 12px; padding: 32px 48px; }
   #shutter small { color: #8b949e; }
   #main { display: flex; height: calc(100vh - 31px); }
-  #term { flex: 1; min-width: 0; }
+  #termwrap { flex: 1; min-width: 0; position: relative; }
+  #pointer-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+  .ping { position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%;
+          border: 3px solid; animation: ping 2.5s ease-out forwards; pointer-events: none; }
+  .ping small { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+                font-size: 11px; background: #161b22; padding: 1px 6px; border-radius: 6px; }
+  @keyframes ping { 0% { transform: scale(.4); opacity: 1; } 70% { opacity: .9; } 100% { transform: scale(1.6); opacity: 0; } }
+  #reactions { position: absolute; right: 12px; bottom: 44px; display: flex; flex-direction: column;
+               gap: 4px; align-items: flex-end; pointer-events: none; z-index: 6; }
+  .react-item { background: #161b22ee; border: 1px solid #30363d; border-radius: 14px; padding: 2px 10px;
+                font-size: 14px; animation: fadeout 4s forwards; }
+  @keyframes fadeout { 0%,75% { opacity: 1; } 100% { opacity: 0; } }
+  #reactbar { position: absolute; right: 12px; bottom: 10px; display: flex; gap: 4px; z-index: 6; }
+  #reactbar button, #quotebtn { background: #21262dcc; border: 1px solid #30363d; border-radius: 8px;
+               font-size: 15px; padding: 3px 8px; cursor: pointer; color: #e6edf3; }
+  #quotebtn { position: absolute; left: 12px; bottom: 10px; z-index: 6; }
+  #quotebtn[hidden] { display: none; }
   #composer { width: 340px; display: flex; flex-direction: column; border-left: 1px solid #30363d; background: #10151c; }
   #chead { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #30363d; }
   #chead small { color: #8b949e; display: block; }
@@ -62,7 +78,16 @@
     <span id="lat" style="margin-left:auto;color:#8b949e"></span>
   </div>
   <div id="main">
-    <div id="term"></div>
+    <div id="termwrap">
+      <div id="term"></div>
+      <div id="pointer-layer"></div>
+      <div id="reactions"></div>
+      <button id="quotebtn" hidden>💬 quote selection</button>
+      <div id="reactbar">
+        <button data-emoji="👍">👍</button><button data-emoji="❤️">❤️</button>
+        <button data-emoji="😮">😮</button><button data-emoji="❓">❓</button>
+      </div>
+    </div>
     <div id="composer">
       <div id="chead">Prompt Composer <small>everyone edits · only the host can send</small></div>
       <div id="cwrap">
