@@ -121,6 +121,35 @@
     joinEl.style.display = "none";
     appEl.style.display = "block";
 
+    // First-join onboarding: explain the compose-only model once, then
+    // remember the dismissal so returning guests skip it.
+    const onboardEl = document.getElementById("onboard");
+    if (!localStorage.getItem("tandem_onboarded")) onboardEl.style.display = "flex";
+    document.getElementById("onboardok").addEventListener("click", () => {
+      onboardEl.style.display = "none";
+      localStorage.setItem("tandem_onboarded", "1");
+    });
+
+    // Turn-state chip. Derived entirely client-side from the authoritative
+    // composer doc: empty = the guest's turn to compose, non-empty = the
+    // engineer is reviewing it. The host's "submitted" ctrl flips it to
+    // "ran" for a beat before recomputing.
+    const turnEl = document.getElementById("turnchip");
+    let ranTimer = null;
+    function setTurn(state) {
+      turnEl.className = "badge chip-" + state;
+      turnEl.textContent = state === "yours" ? "your turn" : state === "reviewing" ? "engineer reviewing" : "engineer ran it";
+    }
+    function refreshTurn() {
+      if (ranTimer) return;
+      setTurn(comp.chars.length > 0 ? "reviewing" : "yours");
+    }
+    function flashRan() {
+      setTurn("ran");
+      if (ranTimer) clearTimeout(ranTimer);
+      ranTimer = setTimeout(() => { ranTimer = null; refreshTurn(); }, 3000);
+    }
+
     const term = new Terminal({
       convertEol: false,
       scrollback: 10000,
@@ -624,6 +653,7 @@
           sendQueue.forEach((p) => rebase(p, ctrl.op));
           syncTextarea(ctrl.op);
         }
+        refreshTurn();
       } else if (ctrl.type === "composer-snapshot" && ctrl.snapshot) {
         comp.chars = Array.from(ctrl.snapshot.text || "");
         comp.authors = [];
@@ -634,6 +664,7 @@
         shadow = comp.chars.join("");
         cinput.value = shadow;
         renderMirror();
+        refreshTurn();
       } else if (ctrl.type === "recap" && typeof ctrl.markdown === "string") {
         // Session ended: show the recap over everything. Rendered as
         // plain text (no markdown lib) to keep the guest bundle
@@ -644,6 +675,7 @@
         statusEl.textContent = "session ended";
       } else if (ctrl.type === "submitted") {
         statusEl.textContent = "✓ the engineer ran it";
+        flashRan();
       } else if (ctrl.type === "highlight" && ctrl.author !== name) {
         showPing(ctrl.author, ctrl.x, ctrl.y);
       } else if (ctrl.type === "react" && ctrl.author !== name) {

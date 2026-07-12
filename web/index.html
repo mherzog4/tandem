@@ -29,6 +29,16 @@
   #consent small { color: #8b949e; }
   #consent button { font-size: 15px; padding: 8px 20px; border-radius: 6px; border: 0; background: #da3633; color: white; cursor: pointer; }
   #email[hidden] { display: none; }
+  .chip-yours { background: #1a7f37; color: #fff; }
+  .chip-reviewing { background: #9e6a03; color: #fff; }
+  .chip-ran { background: #1f6feb; color: #fff; }
+  #onboard { display: none; position: fixed; inset: 0; background: #0d1117f8; z-index: 40;
+             align-items: center; justify-content: center; text-align: center; }
+  #onboard .card { max-width: 460px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 28px 36px; }
+  #onboard h2 { margin: 0 0 6px; }
+  #onboard p { color: #8b949e; margin: 0 0 4px; }
+  #onboard ul { text-align: left; line-height: 1.7; margin: 16px 0 22px; padding-left: 22px; }
+  #onboard button { font-size: 15px; padding: 9px 24px; border-radius: 6px; border: 0; background: #238636; color: #fff; cursor: pointer; }
   #recap { display: none; position: fixed; inset: 0; background: #0d1117f8; z-index: 30;
            align-items: center; justify-content: center; }
   #recap .sheet { background: #161b22; border: 1px solid #30363d; border-radius: 12px;
@@ -132,6 +142,7 @@
     <span id="status">connecting…</span>
     <span id="who"></span>
     <span class="badge" title="You can watch and write the prompt, but only the engineer runs it">compose-only</span>
+    <span id="turnchip" class="badge chip-yours" title="Whose turn it is right now">your turn</span>
     <button id="readertoggle" style="margin-left:auto" title="Read the agent's output as clean text instead of a raw terminal">📖 reader</button>
     <button id="boardtoggle">🗂 board</button>
     <span id="lat" style="color:#8b949e"></span>
@@ -191,6 +202,18 @@
     <div class="sheet">
       <h3>Session recap</h3>
       <pre></pre>
+    </div>
+  </div>
+  <div id="onboard">
+    <div class="card">
+      <h2>Welcome to Tandem 👋</h2>
+      <p>You have a live seat in the engineer's coding-agent session.</p>
+      <ul>
+        <li><b>Type the prompt</b> in the panel on the right. It appears live in the engineer's terminal as you type.</li>
+        <li><b>The engineer runs it.</b> Only their keyboard can execute anything. You compose, they gate.</li>
+        <li><b>You can't break anything.</b> Your terminal view is read-only, so there's no path to run code.</li>
+      </ul>
+      <button id="onboardok">Got it, let's go</button>
     </div>
   </div>
   <div id="consent">
