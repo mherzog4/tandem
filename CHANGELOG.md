@@ -6,6 +6,17 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-12
+
+### Changed
+- **Live mirroring is now the default.** The guest's Composer text appears live
+  in the engineer's agent prompt; the engineer reviews and presses `Ctrl-]` to
+  run it. Guests still cannot execute. `--no-mirror` restores the
+  compose-then-submit model. Cleanest on Claude Code; plain shells show
+  bracketed-paste marker cruft (use `--no-mirror`).
+- Guest Composer UI relabeled to explain the model and confirm when the
+  engineer runs a prompt.
+
 ## [0.1.2] — 2026-07-12
 
 ### Added
@@ -44,7 +55,8 @@ First public release.
   config host connect (`tandem claude`); public-endpoint hardening (session
   cap, per-IP rate limit, dead-peer reaping); local `scripts/release.sh`.
 
-[Unreleased]: https://github.com/mherzog4/tandem/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/mherzog4/tandem/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mherzog4/tandem/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mherzog4/tandem/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mherzog4/tandem/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mherzog4/tandem/releases/tag/v0.1.0
