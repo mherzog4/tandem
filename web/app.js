@@ -59,6 +59,34 @@
     return new Uint8Array(plain);
   }
 
+  // Minimal markdown renderer for reader mode: escapes HTML, then handles
+  // fenced code, ###-headings, -/* bullets, `code`, and **bold**. Not a full
+  // parser — just enough to make agent output readable for a nontechnical guest.
+  function mdEscape(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function mdInline(s) {
+    return mdEscape(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  }
+  function mdToHtml(text) {
+    let html = "", inCode = false, inList = false;
+    const close = () => { if (inList) { html += "</ul>"; inList = false; } };
+    for (const raw of text.split("\n")) {
+      const line = raw.replace(/\s+$/, "");
+      if (line.trim().startsWith("```")) {
+        if (inCode) { html += "</code></pre>"; inCode = false; } else { close(); html += "<pre><code>"; inCode = true; }
+        continue;
+      }
+      if (inCode) { html += mdEscape(raw) + "\n"; continue; }
+      const h = line.match(/^(#{1,3})\s+(.*)/), li = line.match(/^\s*[-*]\s+(.*)/);
+      if (h) { close(); html += `<h${h[1].length}>${mdInline(h[2])}</h${h[1].length}>`; }
+      else if (li) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${mdInline(li[1])}</li>`; }
+      else if (line.trim() === "") { close(); }
+      else { close(); html += `<p>${mdInline(line)}</p>`; }
+    }
+    if (inCode) html += "</code></pre>";
+    close();
+    return html;
+  }
+
   const joinEl = document.getElementById("join");
   const appEl = document.getElementById("app");
   const statusEl = document.getElementById("status");
@@ -102,6 +130,33 @@
       theme: { background: "#0d1117" },
     });
     term.open(document.getElementById("term"));
+
+    // Reader mode: render xterm's already-resolved screen buffer as clean,
+    // larger markdown so a nontechnical guest reads prose, not raw ANSI.
+    // Reads the buffer (not the PTY stream) so TUI repaints are already
+    // settled. ponytail: last 1200 buffer lines, refreshed on render.
+    const readerEl = document.getElementById("reader");
+    const readerMd = readerEl.querySelector(".md");
+    const readerBtn = document.getElementById("readertoggle");
+    let readerOn = false, readerTimer = null;
+    readerBtn.addEventListener("click", () => {
+      readerOn = !readerOn;
+      readerEl.classList.toggle("on", readerOn);
+      readerBtn.classList.toggle("active", readerOn);
+      readerBtn.textContent = readerOn ? "🖥 terminal" : "📖 reader";
+      if (readerOn) renderReader();
+    });
+    term.onRender(() => { if (readerOn && !readerTimer) readerTimer = setTimeout(() => { readerTimer = null; renderReader(); }, 300); });
+    function renderReader() {
+      const buf = term.buffer.active;
+      const start = Math.max(0, buf.length - 1200);
+      const lines = [];
+      for (let i = start; i < buf.length; i++) lines.push(buf.getLine(i).translateToString(true));
+      while (lines.length && lines[0].trim() === "") lines.shift();
+      while (lines.length && lines[lines.length - 1].trim() === "") lines.pop();
+      readerMd.innerHTML = mdToHtml(lines.join("\n"));
+      readerEl.scrollTop = readerEl.scrollHeight;
+    }
 
     const proto = location.protocol === "https:" ? "wss" : "ws";
     const email = document.getElementById("email").value.trim();
