@@ -2,28 +2,28 @@
 class Tandem < Formula
   desc "A shared seat inside your coding-agent session"
   homepage "https://github.com/mherzog4/tandem"
-  version "0.4.0"
+  version "0.5.0"
   license "MIT"
 
   on_macos do
     on_arm do
-      url "https://github.com/mherzog4/tandem/releases/download/v0.4.0/tandem-darwin-arm64"
-      sha256 "6a7ae7b8a56c10842b731a99a186c6e692241a7824a06a6d0c1bdae0ddca56d8"
+      url "https://github.com/mherzog4/tandem/releases/download/v0.5.0/tandem-darwin-arm64"
+      sha256 "12bb544e7e7944eaf25c47d0b02c845a832b2757c2705bf35e905b2e8f93f9be"
     end
     on_intel do
-      url "https://github.com/mherzog4/tandem/releases/download/v0.4.0/tandem-darwin-amd64"
-      sha256 "a3418614b14d70f2a8fedc390170b4a2b328ea383e508a8bc0569774ee12599c"
+      url "https://github.com/mherzog4/tandem/releases/download/v0.5.0/tandem-darwin-amd64"
+      sha256 "1d8b5c1f440c4ddc7ac220cf5e9d825eda2ee08b491f6dcfd87968f85c029f13"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/mherzog4/tandem/releases/download/v0.4.0/tandem-linux-arm64"
-      sha256 "64841d9bd601132000d29221036c697ce3639982dfd6384b1608669a1b0e0bc6"
+      url "https://github.com/mherzog4/tandem/releases/download/v0.5.0/tandem-linux-arm64"
+      sha256 "8ce4db985fe542ebac1c2e59c003fecca34300d9007685fc01ffda5b3adbfec0"
     end
     on_intel do
-      url "https://github.com/mherzog4/tandem/releases/download/v0.4.0/tandem-linux-amd64"
-      sha256 "b2d587e71bdba7964f8d67542e2ed1cb2dcbc96de6864d79cd7844711f75582c"
+      url "https://github.com/mherzog4/tandem/releases/download/v0.5.0/tandem-linux-amd64"
+      sha256 "6cfeb347eb57893e76359e0f2f68338104822d9b368e948ad30538ef94c80ce3"
     end
   end
 
