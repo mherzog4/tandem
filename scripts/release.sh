@@ -56,4 +56,20 @@ if scripts/update-formula.sh "$VERSION" > HomebrewFormula/tandem.rb; then
     git push -q origin HEAD
     echo "formula updated to $VERSION"
   fi
+
+  # Mirror the formula into the tap repo so `brew install mherzog4/tap/tandem`
+  # tracks the release. Best-effort: skipped if the tap repo is absent.
+  TAP="mherzog4/homebrew-tap"
+  if gh repo view "$TAP" >/dev/null 2>&1; then
+    sha=$(gh api "repos/$TAP/contents/Formula/tandem.rb" --jq .sha 2>/dev/null || true)
+    content=$(base64 < HomebrewFormula/tandem.rb | tr -d '\n')
+    if [ -n "$sha" ]; then
+      gh api --method PUT "repos/$TAP/contents/Formula/tandem.rb" \
+        -f message="Update tandem formula to $VERSION" -f content="$content" -f sha="$sha" >/dev/null
+    else
+      gh api --method PUT "repos/$TAP/contents/Formula/tandem.rb" \
+        -f message="Add tandem formula ($VERSION)" -f content="$content" >/dev/null
+    fi
+    echo "tap $TAP updated to $VERSION"
+  fi
 fi
