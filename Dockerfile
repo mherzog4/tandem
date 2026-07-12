@@ -9,6 +9,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags "-s -w" -o /relay ./cmd
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /relay /relay
 EXPOSE 8080
-# BASE_URL is set by fly.toml env; the relay reads --base-url from it via
-# the entrypoint below. Distroless has no shell, so pass flags directly.
-ENTRYPOINT ["/relay", "--addr", ":8080"]
+# Listen address and base URL come from env (PORT / TANDEM_ADDR /
+# TANDEM_BASE_URL) so the platform can inject them — Railway sets PORT.
+# No --addr flag here, or it would override PORT.
+ENTRYPOINT ["/relay"]

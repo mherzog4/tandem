@@ -28,32 +28,32 @@ Tandem prints a join link. Send it to your guest; the link's `#` fragment
 holds the encryption key and never reaches the relay — the relay forwards
 ciphertext only. `Ctrl-\` toggles the privacy shutter.
 
-## Deploy your own relay (Fly.io)
+## Deploy your own relay (Railway)
 
 Guests join through the relay, so it must be publicly reachable over
-`wss://`. The relay is a stateless single binary; deploy it to Fly.io:
+`wss://`. The relay is a stateless single binary; deploy it to Railway
+(builds the Dockerfile remotely — no local Docker needed):
 
 ```sh
-# one-time: create the app (edit `app` in fly.toml to your name first)
-fly apps create tandem-relay
+railway init                                              # create the project
+railway up                                                # remote build + deploy
+railway domain                                            # get https://<name>.up.railway.app + TLS
 
-# tell the relay its public URL, so printed join links point at it
-fly secrets set TANDEM_BASE_URL=https://tandem-relay.fly.dev
-
-# deploy (single instance — sessions are in-memory)
-fly deploy --ha=false
+# point join links at the public URL, then redeploy so it takes effect:
+railway variables --set TANDEM_BASE_URL=https://<name>.up.railway.app
+railway up
 ```
 
 Then hosts connect to it:
 
 ```sh
-tandem --relay wss://tandem-relay.fly.dev claude
+tandem --relay wss://<name>.up.railway.app claude
 ```
 
-Sessions live in the relay's memory, so run **one** instance for now
-(scale-out needs session affinity). Fly provides TLS automatically; the
-`/healthz` check keeps the machine warm. The relay never sees plaintext
-or the encryption key regardless of where it runs.
+Sessions live in the relay's memory, so keep it at **one** replica for now
+(scale-out needs session affinity). Railway provides TLS automatically and
+health-checks `/healthz`. The relay never sees plaintext or the encryption
+key regardless of where it runs.
 
 ## Develop
 
