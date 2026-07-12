@@ -33,6 +33,7 @@ func main() {
 	}
 
 	var tap io.Writer
+	var onResize func(cols, rows uint16)
 	if *relayURL != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		link, err := hostlink.Connect(ctx, *relayURL)
@@ -44,9 +45,12 @@ func main() {
 		defer link.Close()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
 		tap = link
+		onResize = func(cols, rows uint16) {
+			_ = link.WriteControl(map[string]any{"type": "resize", "cols": cols, "rows": rows})
+		}
 	}
 
-	code, err := ptywrap.Run(argv, tap)
+	code, err := ptywrap.Run(argv, tap, onResize)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "tandem:", err)
 		os.Exit(1)

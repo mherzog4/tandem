@@ -20,8 +20,11 @@ import (
 
 // Run executes argv inside a PTY, wiring the current process's terminal
 // through to it. Every byte the child writes is also copied to tap (may
-// be nil). Blocks until the child exits and returns its exit code.
-func Run(argv []string, tap io.Writer) (int, error) {
+// be nil). onResize (may be nil) fires with the PTY dimensions at start
+// and on every window-size change, so the share layer can keep guest
+// renderers in sync. Blocks until the child exits and returns its exit
+// code.
+func Run(argv []string, tap io.Writer, onResize func(cols, rows uint16)) (int, error) {
 	cmd := exec.Command(argv[0], argv[1:]...)
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
@@ -36,6 +39,11 @@ func Run(argv []string, tap io.Writer) (int, error) {
 	go func() {
 		for range winch {
 			_ = pty.InheritSize(os.Stdin, ptmx)
+			if onResize != nil {
+				if sz, err := pty.GetsizeFull(ptmx); err == nil {
+					onResize(sz.Cols, sz.Rows)
+				}
+			}
 		}
 	}()
 	winch <- syscall.SIGWINCH

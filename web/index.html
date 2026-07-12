@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tandem session</title>
+<link rel="stylesheet" href="/static/vendor/xterm.min.css">
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0d1117; color: #e6edf3; font: 14px system-ui, sans-serif; }
+  #join { display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; height: 100vh; }
+  #join input { font-size: 16px; padding: 8px 12px; border-radius: 6px; border: 1px solid #30363d; background: #161b22; color: inherit; }
+  #join button { font-size: 16px; padding: 8px 20px; border-radius: 6px; border: 0; background: #238636; color: white; cursor: pointer; }
+  #bar { display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: #161b22; border-bottom: 1px solid #30363d; font-size: 12px; }
+  #status { color: #8b949e; }
+  .badge { background: #21262d; border-radius: 10px; padding: 2px 8px; }
+  #term { padding: 8px; }
+  #app { display: none; }
+  .err { color: #f85149; }
+</style>
+</head>
+<body>
+<div id="join">
+  <h2>Join Tandem session</h2>
+  <input id="name" placeholder="Your name" maxlength="40" autofocus>
+  <button id="go">Join</button>
+  <div id="joinerr" class="err"></div>
+</div>
+<div id="app">
+  <div id="bar">
+    <span class="badge">tandem</span>
+    <span id="status">connecting…</span>
+    <span id="who"></span>
+    <span class="badge" title="Guests can watch and compose, never execute">view-only</span>
+  </div>
+  <div id="term"></div>
+</div>
+<script src="/static/vendor/xterm.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

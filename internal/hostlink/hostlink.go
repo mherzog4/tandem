@@ -85,15 +85,38 @@ func (l *Link) readLoop() {
 	}
 }
 
-// Write seals one frame and sends it to the relay for broadcast to
-// guests. Satisfies io.Writer so it can sit behind the PTY tap.
+// Frame envelope inside the sealed plaintext: first byte tags the kind.
+const (
+	FramePTY  = 0x00 // raw PTY output bytes
+	FrameCtrl = 0x01 // JSON control message (resize, shutter)
+)
+
+// Write seals one PTY-output frame and sends it to the relay for
+// broadcast to guests. Satisfies io.Writer so it can sit behind the
+// PTY tap.
 func (l *Link) Write(p []byte) (int, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := l.conn.Write(ctx, websocket.MessageBinary, l.cipher.Seal(p)); err != nil {
+	if err := l.send(FramePTY, p); err != nil {
 		return 0, err
 	}
 	return len(p), nil
+}
+
+// WriteControl seals and sends a JSON control message to guests.
+func (l *Link) WriteControl(v any) error {
+	body, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return l.send(FrameCtrl, body)
+}
+
+func (l *Link) send(kind byte, body []byte) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	frame := make([]byte, 1+len(body))
+	frame[0] = kind
+	copy(frame[1:], body)
+	return l.conn.Write(ctx, websocket.MessageBinary, l.cipher.Seal(frame))
 }
 
 func (l *Link) Close() error {

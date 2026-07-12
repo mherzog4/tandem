@@ -1,0 +1,4 @@
+- generic [ref=e2]:
+  - heading "Join Tandem session" [level=2] [ref=e3]
+  - textbox "Your name" [active] [ref=e4]
+  - button "Join" [ref=e5] [cursor=pointer]
