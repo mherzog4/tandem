@@ -140,6 +140,8 @@
               // Full overlay: guests must never sit on a frozen frame of
               // possibly sensitive content (FR4).
               document.getElementById("shutter").style.display = ctrl.on ? "flex" : "none";
+            } else {
+              handleComposerCtrl(ctrl);
             }
           } catch { /* ignore malformed control */ }
         }
@@ -160,6 +162,171 @@
       if (ws.readyState !== WebSocket.OPEN) return;
       ws.send(await sealFrame(key, FRAME_CTRL, { type: "ping", t: performance.now() }));
     }, 5000);
+
+    // ---- Prompt Composer (FR6/FR7) -------------------------------
+    // Replica of the host-authoritative document. Char/author arrays
+    // are code-point based to match the host's rune indexing.
+    const comp = { rev: 0, chars: [], authors: [], cursors: {} };
+    const cinput = document.getElementById("cinput");
+    const cmirror = document.getElementById("cmirror");
+    const cauthors = document.getElementById("cauthors");
+    let shadow = ""; // optimistic local text (textarea contents)
+
+    const hue = (a) => { let h = 0; for (const c of a) h = (h * 31 + c.codePointAt(0)) % 360; return h; };
+    const colorOf = (a) => `hsl(${hue(a)} 70% 65%)`;
+
+    async function sendCtrl(obj) {
+      if (ws.readyState === WebSocket.OPEN) ws.send(await sealFrame(key, FRAME_CTRL, obj));
+    }
+
+    function applyOp(op) {
+      const ins = Array.from(op.ins || "");
+      comp.chars.splice(op.pos, op.del, ...ins);
+      comp.authors.splice(op.pos, op.del, ...ins.map(() => op.author));
+      comp.rev = op.rev;
+      // Shift every remote caret the same way the text moved.
+      for (const a in comp.cursors) {
+        let p = comp.cursors[a];
+        if (op.del > 0 && p > op.pos) p = Math.max(op.pos, p - op.del);
+        if (ins.length && p >= op.pos) p += ins.length;
+        comp.cursors[a] = p;
+      }
+    }
+
+    // Apply a remote op into the local textarea without disturbing
+    // unacked local edits: shift the remote position past our pending
+    // inserts, splice, and move the caret if it sat after the change.
+    function syncTextarea(op) {
+      let rpos = op.pos;
+      for (const p of [inflight, ...sendQueue]) {
+        if (p && p.pos <= rpos) rpos += Array.from(p.ins || "").length - p.del;
+      }
+      rpos = Math.max(0, rpos);
+      const chars = Array.from(shadow);
+      rpos = Math.min(rpos, chars.length);
+      const del = Math.min(op.del, chars.length - rpos);
+      const ins = Array.from(op.ins || "");
+
+      const caretUtf16 = cinput.selectionStart;
+      let caret = Array.from(cinput.value.slice(0, caretUtf16)).length;
+      chars.splice(rpos, del, ...ins);
+      if (caret > rpos) caret = Math.max(rpos, caret - del) + ins.length;
+
+      shadow = chars.join("");
+      cinput.value = shadow;
+      const utf16 = chars.slice(0, caret).join("").length;
+      cinput.setSelectionRange(utf16, utf16);
+      renderMirror();
+    }
+
+    // Escapes text AND attribute contexts: author names and buffer
+    // content are guest-controlled (untrusted).
+    function esc(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function renderMirror() {
+      let html = "";
+      const carets = {};
+      for (const [a, p] of Object.entries(comp.cursors)) {
+        if (a !== name) (carets[p] = carets[p] || []).push(a);
+      }
+      for (let i = 0; i <= comp.chars.length; i++) {
+        for (const a of carets[i] || []) {
+          html += `<span class="caret" style="border-color:${colorOf(a)}" title="${esc(a)}"></span>`;
+        }
+        if (i < comp.chars.length) {
+          html += `<span style="color:${colorOf(comp.authors[i])}">${esc(comp.chars[i])}</span>`;
+        }
+      }
+      cmirror.innerHTML = html;
+      const seen = [...new Set(comp.authors)];
+      cauthors.innerHTML = seen.map((a) => `<span style="color:${colorOf(a)}">●</span> ${esc(a)}`).join("  ");
+    }
+
+    // Classic OT client (Jupiter model): at most one op in flight, the
+    // rest queue locally. Own echoes advance the revision; remote ops
+    // transform every pending op. Without this, rapid typing sends
+    // stale baseRevs and the host transforms our ops against our OWN
+    // earlier ops, interleaving text.
+    let inflight = null;
+    const sendQueue = [];
+
+    function pump() {
+      if (inflight || sendQueue.length === 0) return;
+      inflight = sendQueue.shift();
+      inflight.baseRev = comp.rev;
+      sendCtrl({ type: "op", op: inflight });
+    }
+
+    // Shift a pending local op to account for a remote op that the
+    // server ordered before it.
+    function rebase(pending, remote) {
+      const insLen = Array.from(remote.ins || "").length;
+      if (remote.del > 0 && pending.pos > remote.pos) {
+        pending.pos = Math.max(remote.pos, pending.pos - remote.del);
+      }
+      if (insLen && remote.pos <= pending.pos) pending.pos += insLen;
+      return pending;
+    }
+
+    cinput.addEventListener("input", () => {
+      const now = cinput.value;
+      const a = Array.from(shadow), b = Array.from(now);
+      let s = 0;
+      while (s < a.length && s < b.length && a[s] === b[s]) s++;
+      let e = 0;
+      while (e < a.length - s && e < b.length - s && a[a.length - 1 - e] === b[b.length - 1 - e]) e++;
+      const op = { author: name, baseRev: 0, pos: s, del: a.length - s - e, ins: b.slice(s, b.length - e).join("") };
+      shadow = now;
+      if (op.del > 0 || op.ins) {
+        sendQueue.push(op);
+        pump();
+      }
+    });
+
+    document.getElementById("cundo").addEventListener("click", () => sendCtrl({ type: "undo", author: name }));
+
+    let cursorTimer = null;
+    document.addEventListener("selectionchange", () => {
+      if (document.activeElement !== cinput || cursorTimer) return;
+      cursorTimer = setTimeout(() => {
+        cursorTimer = null;
+        const pos = Array.from(cinput.value.slice(0, cinput.selectionStart)).length;
+        sendCtrl({ type: "cursor", author: name, pos });
+      }, 200);
+    });
+
+    function handleComposerCtrl(ctrl) {
+      if (ctrl.type === "composer-op" && ctrl.op) {
+        applyOp(ctrl.op);
+        if (ctrl.op.author === name && inflight) {
+          // Our echo: revision advances, next queued op may fly.
+          inflight = null;
+          renderMirror();
+          pump();
+        } else {
+          // Remote op: rebase everything we haven't been acked for.
+          if (inflight) rebase(inflight, ctrl.op);
+          sendQueue.forEach((p) => rebase(p, ctrl.op));
+          syncTextarea(ctrl.op);
+        }
+      } else if (ctrl.type === "composer-snapshot" && ctrl.snapshot) {
+        comp.chars = Array.from(ctrl.snapshot.text || "");
+        comp.authors = [];
+        for (const sp of ctrl.snapshot.spans || []) {
+          for (let i = 0; i < sp.len; i++) comp.authors.push(sp.author);
+        }
+        comp.rev = ctrl.snapshot.rev;
+        shadow = comp.chars.join("");
+        cinput.value = shadow;
+        renderMirror();
+      } else if (ctrl.type === "cursor" && ctrl.author) {
+        comp.cursors[ctrl.author] = ctrl.pos;
+        renderMirror();
+      }
+    }
+    // ---------------------------------------------------------------
 
     ws.onopen = () => { statusEl.textContent = "live"; whoEl.textContent = `you: ${name}`; };
     ws.onclose = (ev) => {

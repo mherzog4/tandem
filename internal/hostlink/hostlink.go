@@ -55,6 +55,11 @@ type Link struct {
 	done     chan struct{}
 	closeOne sync.Once
 
+	// OnGuestJoin, if set before the first frame arrives, fires on every
+	// guest join presence event (after the automatic scrollback replay).
+	// The session broker uses it to push a composer snapshot.
+	OnGuestJoin func(name string)
+
 	mu         sync.Mutex
 	scrollback []byte
 	shuttered  bool
@@ -194,6 +199,9 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 				l.mu.Unlock()
 				if shuttered {
 					_ = l.WriteControl(map[string]any{"type": "shutter", "on": true})
+				}
+				if l.OnGuestJoin != nil {
+					l.OnGuestJoin(p.Name)
 				}
 			}
 			continue

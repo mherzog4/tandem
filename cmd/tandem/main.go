@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/mherzog4/tandem/internal/broker"
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/ptywrap"
 )
@@ -41,6 +42,8 @@ func main() {
 			os.Exit(1)
 		}
 		defer link.Close()
+		b := broker.New(link)
+		go b.Run()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
 		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ toggles the privacy shutter")
 		opts.Tap = link
