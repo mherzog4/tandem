@@ -32,7 +32,20 @@
   }
 
   async function importKey(keyB64) {
-    return crypto.subtle.importKey("raw", b64urlDecode(keyB64), "AES-GCM", false, ["decrypt"]);
+    return crypto.subtle.importKey("raw", b64urlDecode(keyB64), "AES-GCM", false, ["decrypt", "encrypt"]);
+  }
+
+  async function sealFrame(key, kind, obj) {
+    const body = new TextEncoder().encode(JSON.stringify(obj));
+    const plain = new Uint8Array(1 + body.length);
+    plain[0] = kind;
+    plain.set(body, 1);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, plain));
+    const frame = new Uint8Array(12 + ct.length);
+    frame.set(iv, 0);
+    frame.set(ct, 12);
+    return frame;
   }
 
   async function openFrame(key, buf) {
@@ -48,6 +61,7 @@
   const appEl = document.getElementById("app");
   const statusEl = document.getElementById("status");
   const whoEl = document.getElementById("who");
+  const latEl = document.getElementById("lat");
   const errEl = document.getElementById("joinerr");
 
   document.getElementById("go").addEventListener("click", start);
@@ -119,6 +133,8 @@
             const ctrl = JSON.parse(new TextDecoder().decode(body));
             if (ctrl.type === "resize" && ctrl.cols > 0 && ctrl.rows > 0) {
               term.resize(ctrl.cols, ctrl.rows);
+            } else if (ctrl.type === "pong" && typeof ctrl.t === "number") {
+              recordRTT(ctrl.t);
             } else if (ctrl.type === "shutter") {
               statusEl.textContent = ctrl.on ? "⏸ host paused sharing" : "live";
               // Full overlay: guests must never sit on a frozen frame of
@@ -129,6 +145,21 @@
         }
       });
     };
+
+    // Latency probe (FR3): sealed ping through the relay, echoed by the
+    // host daemon. One-way ≈ RTT/2; avoids host/guest clock skew.
+    const rtts = [];
+    function recordRTT(sentAt) {
+      rtts.push(performance.now() - sentAt);
+      if (rtts.length > 60) rtts.shift();
+      const sorted = [...rtts].sort((a, b) => a - b);
+      const q = (p) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+      latEl.textContent = `echo p50 ${(q(0.5) / 2).toFixed(0)}ms · p95 ${(q(0.95) / 2).toFixed(0)}ms`;
+    }
+    setInterval(async () => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+      ws.send(await sealFrame(key, FRAME_CTRL, { type: "ping", t: performance.now() }));
+    }, 5000);
 
     ws.onopen = () => { statusEl.textContent = "live"; whoEl.textContent = `you: ${name}`; };
     ws.onclose = (ev) => {
