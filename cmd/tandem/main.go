@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"sync/atomic"
@@ -30,6 +31,8 @@ func main() {
 	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); empty runs unshared")
 	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
 	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
+	allow := flag.String("allow", "", "comma-separated guest emails allowed to join (FR22; claimed, not verified)")
+	recordIntent := flag.Bool("record", false, "declare the session recorded; guests must acknowledge before viewing (FR24)")
 	showVersion := flag.Bool("version", false, "print version")
 	flag.Parse()
 	if *showVersion {
@@ -57,6 +60,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
 		fmt.Fprintf(os.Stderr, "tandem: your host link (confirm powers, keep private) %s&h=%s\n", link.JoinURL, b.HostToken)
 		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer")
+		if *allow != "" {
+			link.SetAllowlist(strings.Split(*allow, ","))
+			fmt.Fprintln(os.Stderr, "tandem: guest allowlist active (emails are claimed, not verified)")
+		}
+		if *recordIntent {
+			link.SetRecording(true)
+			fmt.Fprintln(os.Stderr, "tandem: session declared as recorded; guests must acknowledge")
+		}
 
 		// Serialize confirmed cards into the wrapped repo (FR14). The
 		// working directory is where the agent runs, so DOMAIN.md lands
