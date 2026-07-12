@@ -1,0 +1,40 @@
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_add6249b150936 94
+.golangci.yml
+  s_6f6ec78b82b8ab::t_efc3544187b5a1 1-8,19-23
+  s_6f6ec78b82b8ab::t_be29f8fedc4fb3 9-12,14-18
+  s_6f6ec78b82b8ab::t_d98bd428539a45 13
+internal/composer/composer_test.go
+  s_6f6ec78b82b8ab::t_e15a51828a16a8 51-52
+internal/recap/recap_test.go
+  s_6f6ec78b82b8ab::t_e15a51828a16a8 34-35
+internal/relay/relay.go
+  s_6f6ec78b82b8ab::t_e15a51828a16a8 35,47
+internal/adapter/generic_test.go
+  s_6f6ec78b82b8ab::t_e15a51828a16a8 20-22
+.github/workflows/ci.yml
+  s_6f6ec78b82b8ab::t_b76af9e2b6da49 21-49
+internal/redact/redact_test.go
+  s_6f6ec78b82b8ab::t_e15a51828a16a8 74-77
+internal/relay/limits.go
+  s_6f6ec78b82b8ab::t_4821d2a73e203f 109
+  s_6f6ec78b82b8ab::t_e15a51828a16a8 18-22
+.github/dependabot.yml
+  s_6f6ec78b82b8ab::t_bd5485ee080687 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "93d499268a7883df3f15a42f5e223c9042c6b36f",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
