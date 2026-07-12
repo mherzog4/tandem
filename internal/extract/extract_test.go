@@ -158,3 +158,43 @@ agent: I'll model this with a ClaimDenied event and a reopenClaim command...`))
 		}
 	}
 }
+
+func TestDriftDetection(t *testing.T) {
+	h := newHarness(`{
+  "cards": [],
+  "conflicts": [
+    {"cardText":"Claim Denied","usage":"agent renamed it ClaimRejected","quote":"emit ClaimRejected event","confidence":0.9},
+    {"cardText":"Reopen Window","usage":"weak hunch","quote":"", "confidence":0.4},
+    {"cardText":"","usage":"malformed","quote":"", "confidence":0.95}
+  ]
+}`)
+	var drifts [][]Conflict
+	h.ext.OnDrift = func(c []Conflict) { drifts = append(drifts, c) }
+
+	// Confirmed card with alias must appear in the prompt for the model.
+	c, _ := h.b.Add(board.TypeEvent, "Claim Denied", "marcus")
+	h.b.Confirm(c.ID)
+	h.b.SetAlias(c.ID, "ClaimDenied")
+
+	h.ext.Write([]byte("agent: emitting ClaimRejected event"))
+	h.ext.Tick(context.Background())
+
+	if len(drifts) != 1 || len(drifts[0]) != 1 {
+		t.Fatalf("drifts = %+v", drifts)
+	}
+	if drifts[0][0].CardText != "Claim Denied" {
+		t.Fatalf("drift = %+v", drifts[0][0])
+	}
+	if !strings.Contains(h.prompts[0], "[confirmed]") || !strings.Contains(h.prompts[0], "code: ClaimDenied") {
+		t.Fatal("confirmed state / alias missing from prompt")
+	}
+}
+
+func TestObjectResponseCards(t *testing.T) {
+	h := newHarness(`{"cards":[{"type":"term","text":"Reopen Window","confidence":0.9,"quote":"90 days"}],"conflicts":[]}`)
+	h.ext.Write([]byte("x"))
+	h.ext.Tick(context.Background())
+	if len(h.proposed) != 1 || h.proposed[0][0].Text != "Reopen Window" {
+		t.Fatalf("proposed = %+v", h.proposed)
+	}
+}

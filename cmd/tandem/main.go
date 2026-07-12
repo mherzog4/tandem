@@ -110,10 +110,14 @@ func main() {
 		ext := extract.New(b.Board.Cards, b.ProposeCards)
 		guestStream := io.Writer(link)
 		if ext != nil {
+			// Vocabulary drift flags (FR17) ride the same LLM pass.
+			ext.OnDrift = func(conflicts []extract.Conflict) {
+				_ = link.WriteControl(map[string]any{"type": "drift", "conflicts": conflicts})
+			}
 			go ext.Run()
 			defer ext.Close()
 			guestStream = io.MultiWriter(link, ext)
-			fmt.Fprintln(os.Stderr, "tandem: domain extractor active")
+			fmt.Fprintln(os.Stderr, "tandem: domain extractor active (proposals + drift flags)")
 		}
 
 		opts.Tap = guestStream
