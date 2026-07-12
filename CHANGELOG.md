@@ -6,6 +6,13 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-07-12
+
+### Added
+- `tandem <agent>` now auto-copies the guest link to your clipboard and pauses
+  ("press Enter to launch…") so you can share it before the agent's full-screen
+  TUI hides it. `--no-wait` skips the pause.
+
 ## [0.1.1] — 2026-07-12
 
 ### Added
@@ -37,6 +44,7 @@ First public release.
   config host connect (`tandem claude`); public-endpoint hardening (session
   cap, per-IP rate limit, dead-peer reaping); local `scripts/release.sh`.
 
-[Unreleased]: https://github.com/mherzog4/tandem/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/mherzog4/tandem/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/mherzog4/tandem/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mherzog4/tandem/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mherzog4/tandem/releases/tag/v0.1.0
