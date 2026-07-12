@@ -1,0 +1,23 @@
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_2a185775da405c 68-75
+internal/domainfile/domainfile_test.go
+  s_6f6ec78b82b8ab::t_dcb5727808d964 79-119
+internal/domainfile/domainfile.go
+  s_6f6ec78b82b8ab::t_4213863a0990b3 108-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "9b44504bdbd844c99bd64e01a1d44e50fa373256",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
