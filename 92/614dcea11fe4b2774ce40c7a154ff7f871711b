@@ -1,0 +1,30 @@
+internal/hostlink/hostlink_test.go
+  s_6f6ec78b82b8ab::t_b0aed676c789e3 192-213
+web/app.js
+  s_6f6ec78b82b8ab::t_f238ecbff4021b 64
+  s_6f6ec78b82b8ab::t_2d8a71d51af84e 149-163
+  s_6f6ec78b82b8ab::t_554bad2fdf5c18 136-137
+  s_6f6ec78b82b8ab::t_02e08813fdc87b 35-48
+docs/latency.md
+  s_6f6ec78b82b8ab::t_b05e5fe8860202 1-34
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_2b7c17ff6a06b9 205-216
+web/index.html
+  s_6f6ec78b82b8ab::t_c82adffc084643 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "92614dcea11fe4b2774ce40c7a154ff7f871711b",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
