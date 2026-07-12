@@ -108,6 +108,84 @@ func TestHostResume(t *testing.T) {
 	}
 }
 
+// TestWaitingRoom: with approval on, a guest is held until the host
+// admits it and receives no host frame while pending (link-leak defense).
+func TestWaitingRoom(t *testing.T) {
+	base, host, id := setup(t)
+	ctx := context.Background()
+
+	// Host enables approval, then give the relay a moment to record it.
+	if err := host.Write(ctx, websocket.MessageText, []byte(`{"type":"approval","on":true}`)); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	guest := dial(t, base+"/ws/join/"+id+"?name=Trudy")
+	defer guest.Close(websocket.StatusNormalClosure, "")
+
+	// The guest's first message is the waiting notice, not a roster/join.
+	if m := readJSON(t, guest); m["type"] != "waiting" {
+		t.Fatalf("expected waiting notice, got %v", m)
+	}
+
+	// The host learns of the request and gets a connection id.
+	jr := readJSON(t, host)
+	if jr["type"] != "join-request" || jr["name"] != "Trudy" {
+		t.Fatalf("expected join-request, got %v", jr)
+	}
+	cid, _ := jr["cid"].(string)
+	if cid == "" {
+		t.Fatal("join-request carried no cid")
+	}
+
+	// A host frame sent while the guest is pending must never reach it.
+	// (A short-timeout Read would fail the websocket, so instead we prove
+	// the property by ordering: this pre-admit frame must not be the first
+	// binary frame the guest sees after being admitted below.)
+	if err := host.Write(ctx, websocket.MessageBinary, []byte("secret-before-admit")); err != nil {
+		t.Fatal(err)
+	}
+
+	// Host admits; now the guest is a real participant and sees frames.
+	if err := host.Write(ctx, websocket.MessageText, []byte(`{"type":"admit","cid":"`+cid+`"}`)); err != nil {
+		t.Fatal(err)
+	}
+	admitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	// Resend the post-admit frame until read: admission and the guest's
+	// entry into the broadcast set race a single write (in a real session
+	// the host streams continuously, so this is not a product concern).
+	sendDone := make(chan struct{})
+	go func() {
+		defer close(sendDone)
+		for {
+			select {
+			case <-admitCtx.Done():
+				return
+			default:
+				_ = host.Write(ctx, websocket.MessageBinary, []byte("hello-after-admit"))
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}()
+	for {
+		typ, data, err := guest.Read(admitCtx)
+		if err != nil {
+			t.Fatalf("admitted guest never got the frame: %v", err)
+		}
+		if typ == websocket.MessageBinary {
+			// The pre-admit frame must never have been forwarded, so the
+			// first binary frame here is the post-admit one.
+			if string(data) != "hello-after-admit" {
+				t.Fatalf("admitted guest's first frame was %q, want hello-after-admit", data)
+			}
+			break
+		}
+	}
+	cancel()
+	<-sendDone
+}
+
 func TestHostToGuestForwardingAndPresence(t *testing.T) {
 	base, host, id := setup(t)
 
