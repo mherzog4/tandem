@@ -1,0 +1,45 @@
+internal/mirror/mirror.go
+  s_6f6ec78b82b8ab::t_aee37971086764 1-125
+internal/ptywrap/ptywrap.go
+  s_6f6ec78b82b8ab::t_f477037033106b 81-87,89,91
+  s_6f6ec78b82b8ab::t_e5f0bec414e338 37-39
+  s_6f6ec78b82b8ab::t_bf2c5ff93ffc14 153-156
+internal/ptywrap/injector.go
+  s_6f6ec78b82b8ab::t_de2c766bfa0804 32-37,44-50
+internal/mirror/mirror_test.go
+  s_6f6ec78b82b8ab::t_5c3b019a841d61 6
+  s_6f6ec78b82b8ab::t_c6f053d6cb5f87 27
+  s_6f6ec78b82b8ab::t_e63335cb339312 58,63,75,80
+  s_6f6ec78b82b8ab::t_b8652f073952fe 71-73,79
+  s_6f6ec78b82b8ab::t_dca12eebe9ea9d 64
+  s_6f6ec78b82b8ab::t_977b97e054555b 1-5,7-26,28-57,59-62,65-70,74,76-78,81-84
+internal/signer/signer.go
+  s_6f6ec78b82b8ab::t_11298b4a68fab1 89-90,92-95
+  s_6f6ec78b82b8ab::t_575350a81c38f4 79
+  s_6f6ec78b82b8ab::t_30a39a8c7003bc 23-26,30
+  s_6f6ec78b82b8ab::t_d0d54a0d586b09 52-58,60
+docs/compat.md
+  s_6f6ec78b82b8ab::t_b887e8017ac4a3 1-27
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_a989da5fe8a6a3 92-107
+  s_6f6ec78b82b8ab::t_c9572caf5a6c76 27
+  s_6f6ec78b82b8ab::t_e8709447807943 13-14,17
+internal/broker/broker.go
+  s_6f6ec78b82b8ab::t_0d3c5d98a520d9 26-35,87,95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "7dd6e59d6e164f3d2eff6c9fd656bbce39ab19d4",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
