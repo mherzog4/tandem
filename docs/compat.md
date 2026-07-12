@@ -9,11 +9,16 @@ Context injection (the confirmed Domain Board reaching the agent, FR15)
 varies by agent — `tandem` auto-detects from the wrapped command name
 (PRD §8.3):
 
-| Agent | Composer → input line | Domain injection |
+**Default: live mirroring is ON.** The guest's Composer text appears live in
+the engineer's agent input line; the engineer reviews it and presses `Ctrl-]`
+to run it (the guest can never execute — their terminal has no stdin path).
+`--no-mirror` turns this off and falls back to the compose-then-submit model.
+
+| Agent | With mirror (default) | Domain injection |
 |-------|----------------------|------------------|
-| Claude Code (`claude`, `claude-*`) | live with `--mirror` (opt-in), otherwise submit-time | managed `CLAUDE.md` include importing `DOMAIN.md` |
-| Known agent CLIs (see list) | submit-time; `--mirror` may work but is untested | compact confirmed-card digest prepended to each submitted prompt (≤1 KiB, overflow points to `DOMAIN.md`) |
-| Plain shells / anything else | submit-time | **clipboard mode**: `Ctrl-]` copies the composed prompt (with dirty-model note) to the host clipboard via OSC 52 — paste it wherever. The Board and `DOMAIN.md`/`domain.yaml` stay fully functional. |
+| Claude Code (`claude`, `claude-*`) | clean — Claude strips the bracketed-paste markers, so the guest text renders normally in the prompt | managed `CLAUDE.md` include importing `DOMAIN.md` |
+| Known agent CLIs (see list) | works; cleanliness depends on whether the agent's input strips bracketed paste | confirmed-card digest prepended at run (≤1 KiB) |
+| Plain shells / anything else | works but bracketed-paste markers may show (shells don't strip them) — use `--no-mirror` for a clean shell | with `--no-mirror`, `Ctrl-]` copies the prompt to the host clipboard (OSC 52) |
 
 **Prepend tier — recognized by binary name** (`internal/adapter/generic.go`):
 `codex`, `gemini`, `aider`, `droid` (Factory), `cursor-agent`, `amp`,
@@ -32,19 +37,24 @@ terminals (iTerm2, kitty, tmux with `set-clipboard on`, Ghostty,
 WezTerm) honor; if yours doesn't, the prompt is still in `DOMAIN.md`
 provenance and the recap.
 
-## How live mirroring works (`--mirror`)
+## How live mirroring works (default; `--no-mirror` to disable)
 
 The daemon converges the agent's input line on the Composer buffer:
 backspaces to the common prefix, retype the suffix inside a bracketed
 paste. Newlines/tabs flatten to spaces while composing (the real
-newlines return at submit). Mirroring pauses while the host is typing
+newlines return at run). Mirroring pauses while the host is typing
 (1 s of keyboard idle required) so two writers never interleave, and
 every mirror write passes the same Ed25519 signing chokepoint as
 submissions (`docs/protocol.md`).
 
-Known limits: mirroring assumes the agent's input widget behaves like a
-line editor (chars append, 0x7f deletes). If a TUI misbehaves, drop the
-flag — submit-time injection always works.
+**Run = `Ctrl-]`.** It erases the live preview (backspaces), then injects
+the authoritative signed buffer as a bracketed paste plus Enter, and clears
+the Composer. Because the preview is already on the line, no text is doubled.
+
+Known limits: mirroring assumes the agent's input behaves like a line editor
+(chars append, `0x7f` deletes) and strips bracketed-paste markers. Claude Code
+does both. Plain shells (bash/zsh) don't strip the markers, so the preview
+shows `…~` cruft — run those with `--no-mirror`.
 
 ## Dictation (FR9)
 

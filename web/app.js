@@ -588,7 +588,7 @@
         overlay.style.display = "flex";
         statusEl.textContent = "session ended";
       } else if (ctrl.type === "submitted") {
-        statusEl.textContent = "prompt sent ✓";
+        statusEl.textContent = "✓ the engineer ran it";
       } else if (ctrl.type === "highlight" && ctrl.author !== name) {
         showPing(ctrl.author, ctrl.x, ctrl.y);
       } else if (ctrl.type === "react" && ctrl.author !== name) {

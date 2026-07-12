@@ -118,7 +118,7 @@
     <span class="badge">tandem</span>
     <span id="status">connecting…</span>
     <span id="who"></span>
-    <span class="badge" title="Guests can watch and compose, never execute">view-only</span>
+    <span class="badge" title="You can watch and write the prompt, but only the engineer runs it">compose-only</span>
     <button id="boardtoggle" style="margin-left:auto">🗂 board</button>
     <span id="lat" style="color:#8b949e"></span>
   </div>
@@ -135,10 +135,10 @@
       </div>
     </div>
     <div id="composer">
-      <div id="chead">Prompt Composer <small>everyone edits · only the host can send</small></div>
+      <div id="chead">Prompt <small>type here — it appears live in the engineer's terminal. They review and run it; you can't execute.</small></div>
       <div id="cwrap">
         <div id="cmirror" aria-hidden="true"></div>
-        <textarea id="cinput" spellcheck="false" placeholder="Type what should happen, in your words…"></textarea>
+        <textarea id="cinput" spellcheck="false" placeholder="Type the prompt in your own words — the engineer sends it to the agent…"></textarea>
       </div>
       <div id="cfoot">
     <span id="cauthors"></span>

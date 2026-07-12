@@ -82,3 +82,28 @@ func TestPausesWhileHostTypes(t *testing.T) {
 		t.Fatalf("never mirrored after host idle: %q", c.all())
 	}
 }
+
+func TestClearAndReset(t *testing.T) {
+	c := &capture{}
+	m := New(c.submit, nil)
+	m.Update("hello")
+	wait()
+	// Live preview is "hello" (5 runes). ClearAndReset erases it.
+	seq := m.ClearAndReset()
+	if seq != "\x7f\x7f\x7f\x7f\x7f" {
+		t.Fatalf("clear seq = %q, want 5 backspaces", seq)
+	}
+	// State forgotten: a following Update("") is a no-op, and a new
+	// Update starts fresh from empty.
+	before := c.all()
+	m.Update("")
+	wait()
+	if c.all() != before {
+		t.Fatalf("Update(\"\") after clear should be a no-op, got %q", c.all()[len(before):])
+	}
+	m.Update("hi")
+	wait()
+	if got := c.all(); !strings.HasSuffix(got, "\x1b[200~hi\x1b[201~") {
+		t.Fatalf("post-clear compose = %q", got)
+	}
+}
