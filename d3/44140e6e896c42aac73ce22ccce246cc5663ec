@@ -1,0 +1,21 @@
+scripts/install.sh
+  s_6f6ec78b82b8ab::t_3d6fed761e4763 4-6,10,30,35,38-48
+README.md
+  s_6f6ec78b82b8ab::t_76239e46c02593 51-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d344140e6e896c42aac73ce22ccce246cc5663ec",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
