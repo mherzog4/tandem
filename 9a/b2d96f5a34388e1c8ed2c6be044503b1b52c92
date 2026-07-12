@@ -1,0 +1,25 @@
+internal/adapter/claudecode.go
+  s_6f6ec78b82b8ab::t_992dbeca451c1b 1-72
+internal/adapter/claudecode_test.go
+  s_6f6ec78b82b8ab::t_57da0171f439bd 1-99
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_3e4545c2bd6a7e 63-66,69-70,73-81
+  s_6f6ec78b82b8ab::t_2acae3bc34546b 82,135-137
+  s_6f6ec78b82b8ab::t_c195fbe174365a 15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "9ab2d96f5a34388e1c8ed2c6be044503b1b52c92",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
