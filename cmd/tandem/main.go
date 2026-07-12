@@ -28,6 +28,8 @@ import (
 	"github.com/mherzog4/tandem/internal/record"
 	"github.com/mherzog4/tandem/internal/redact"
 	"github.com/mherzog4/tandem/internal/signer"
+
+	"golang.org/x/term"
 )
 
 // version is overridden at release time via -ldflags "-X main.version=...".
@@ -46,6 +48,7 @@ func main() { os.Exit(run()) }
 func run() int {
 	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); overrides TANDEM_RELAY and the built-in default")
 	noShare := flag.Bool("no-share", false, "run the agent locally with no relay/session (unshared)")
+	noWait := flag.Bool("no-wait", false, "launch the agent immediately instead of pausing to share the link first")
 	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
 	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
 	allow := flag.String("allow", "", "comma-separated guest emails allowed to join (FR22; claimed, not verified)")
@@ -301,6 +304,21 @@ func run() int {
 			prevSubmit := opts.Intercepts[0x1D]
 			opts.Intercepts[0x1D] = func() { mir.Reset(); prevSubmit() }
 		}
+
+		// Auto-copy the guest link to the host's clipboard (OSC 52) so
+		// there's nothing to select by hand.
+		copyToClipboard(link.JoinURL)
+		fmt.Fprintln(os.Stderr, "tandem: guest link copied to your clipboard")
+
+		// Hold the agent until the host has shared the link — the agent's
+		// full-screen TUI would otherwise hide it immediately. Skipped
+		// with --no-wait or when stdin isn't a terminal.
+		if !*noWait && term.IsTerminal(int(os.Stdin.Fd())) {
+			// Let an early guest know nothing's wrong yet.
+			_, _ = link.Write([]byte("\r\n⏳ waiting for the host to start the session…\r\n"))
+			fmt.Fprintf(os.Stderr, "\ntandem: share the link, then press Enter to launch %s… ", argv[0])
+			waitForEnter()
+		}
 	}
 
 	code, err := ptywrap.Run(argv, opts)
@@ -309,4 +327,23 @@ func run() int {
 		return 1
 	}
 	return code
+}
+
+// copyToClipboard puts s on the host's terminal clipboard via OSC 52.
+// A no-op on terminals that don't support it (harmless escape).
+func copyToClipboard(s string) {
+	fmt.Fprintf(os.Stdout, "\x1b]52;c;%s\a", base64.StdEncoding.EncodeToString([]byte(s)))
+}
+
+// waitForEnter blocks until the host presses Enter. It reads stdin one
+// byte at a time (not buffered) so it consumes exactly the newline and
+// leaves any later input for the agent's PTY.
+func waitForEnter() {
+	var b [1]byte
+	for {
+		n, err := os.Stdin.Read(b[:])
+		if err != nil || (n > 0 && b[0] == '\n') {
+			return
+		}
+	}
 }

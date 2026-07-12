@@ -49,3 +49,12 @@ Build vs. reuse: transport/relay follows sshx and upterm prior art. The novel wo
 ## Milestone order (PRD §11)
 
 M0: PTY wrap + encrypted relay + read-only guest terminal → M1: gated CRDT Composer with attribution/dictation/host-only submit → M2: Domain Board, `DOMAIN.md` serialization, Claude Code injection → M3: automatic extractor, drift flags, recap/replay. Build in this order; M1 is the demo that sells the product.
+
+<!-- tandem:begin — managed by tandem, do not edit this block -->
+@DOMAIN.md
+
+The imported DOMAIN.md is this repository's ubiquitous language,
+agreed with the domain experts in Tandem sessions. Name new code
+constructs after its terms; where a term carries a `code:` alias,
+use the alias in code and the business wording everywhere else.
+<!-- tandem:end -->
