@@ -32,7 +32,14 @@ use the alias in code and the business wording everywhere else.
 // User content outside the block is preserved byte-for-byte; a missing
 // CLAUDE.md is created containing only the block.
 func EnsureClaudeInclude(dir string) error {
-	path := filepath.Join(dir, "CLAUDE.md")
+	return ensureManagedBlock(filepath.Join(dir, "CLAUDE.md"), includeBlock)
+}
+
+// ensureManagedBlock installs or refreshes the tandem:begin..end block in
+// path with the given content, preserving everything outside the block and
+// creating the file if absent. Shared by the CLAUDE.md and AGENTS.md
+// adapters.
+func ensureManagedBlock(path, block string) error {
 	old, err := os.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
 		return err
@@ -41,7 +48,7 @@ func EnsureClaudeInclude(dir string) error {
 
 	if b := strings.Index(content, beginMark); b >= 0 {
 		if e := strings.Index(content, endMark); e > b {
-			updated := content[:b] + includeBlock + content[e+len(endMark):]
+			updated := content[:b] + block + content[e+len(endMark):]
 			if updated == content {
 				return nil // already current
 			}
@@ -59,7 +66,7 @@ func EnsureClaudeInclude(dir string) error {
 			sep = "\n\n"
 		}
 	}
-	return os.WriteFile(path, []byte(content+sep+includeBlock+"\n"), 0o644)
+	return os.WriteFile(path, []byte(content+sep+block+"\n"), 0o644)
 }
 
 // IsClaude reports whether argv looks like a Claude Code invocation.
