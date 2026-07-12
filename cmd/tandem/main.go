@@ -16,6 +16,7 @@ import (
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
+	"github.com/mherzog4/tandem/internal/redact"
 	"github.com/mherzog4/tandem/internal/signer"
 )
 
@@ -25,6 +26,7 @@ var version = "0.0.1-dev"
 func main() {
 	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); empty runs unshared")
 	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
+	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
 	showVersion := flag.Bool("version", false, "print version")
 	flag.Parse()
 	if *showVersion {
@@ -52,6 +54,21 @@ func main() {
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
 		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer")
 		opts.Tap = link
+		// Secret masking (FR23) sits between the PTY tap and the link:
+		// strictly pre-encryption, guests only. The host terminal shows
+		// originals; a bell rings when masking fires, and a count prints
+		// at session end.
+		var red *redact.Redactor
+		if !*noRedact {
+			red = redact.New(link)
+			red.OnRedact = func() { fmt.Fprint(os.Stdout, "\a") }
+			opts.Tap = red
+			defer func() {
+				if n := red.Count.Load(); n > 0 {
+					fmt.Fprintf(os.Stderr, "tandem: masked %d likely secret(s) from guests this session\n", n)
+				}
+			}()
+		}
 		opts.OnResize = func(cols, rows uint16) {
 			_ = link.WriteControl(map[string]any{"type": "resize", "cols": cols, "rows": rows})
 		}
