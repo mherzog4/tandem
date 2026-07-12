@@ -12,13 +12,15 @@ import (
 	"encoding/json"
 	"sync/atomic"
 
+	"github.com/mherzog4/tandem/internal/board"
 	"github.com/mherzog4/tandem/internal/composer"
 	"github.com/mherzog4/tandem/internal/hostlink"
 )
 
 type Broker struct {
-	Doc  *composer.Doc
-	link *hostlink.Link
+	Doc   *composer.Doc
+	Board *board.Board
+	link  *hostlink.Link
 
 	// Dropped counts guest frames rejected by the allowlist — a spike is
 	// a probe signal worth surfacing later.
@@ -27,6 +29,10 @@ type Broker struct {
 	// OnChange, if set, fires with the new buffer text after every
 	// applied edit (op, undo, flush). The mirror layer subscribes.
 	OnChange func(text string)
+
+	// OnBoardChange fires with the full card list after every board
+	// mutation. The serializer (issue #18) subscribes.
+	OnBoardChange func(cards []board.Card)
 }
 
 func (b *Broker) changed() {
@@ -36,8 +42,8 @@ func (b *Broker) changed() {
 }
 
 func New(link *hostlink.Link) *Broker {
-	b := &Broker{Doc: composer.NewDoc(), link: link}
-	link.OnGuestJoin = func(string) { b.sendSnapshot() }
+	b := &Broker{Doc: composer.NewDoc(), Board: board.New(), link: link}
+	link.OnGuestJoin = func(string) { b.sendSnapshot(); b.sendBoard() }
 	return b
 }
 
@@ -57,6 +63,11 @@ type guestMsg struct {
 	X      float64      `json:"x"`
 	Y      float64      `json:"y"`
 	Emoji  string       `json:"emoji"`
+	// Board fields (issue #17).
+	ID       string `json:"id"`
+	CardType string `json:"cardType"`
+	Text     string `json:"text"`
+	ToIndex  int    `json:"toIndex"`
 }
 
 func (b *Broker) handle(frame []byte) {
@@ -121,8 +132,44 @@ func (b *Broker) handle(frame []byte) {
 			return
 		}
 		_ = b.link.WriteControl(map[string]any{"type": "react", "author": msg.Author, "emoji": msg.Emoji})
+	case "board-add":
+		// Cards capped at 2 KiB of text and 200 cards total.
+		if len(msg.Text) > 2<<10 || len(b.Board.Cards()) >= 200 {
+			b.Dropped.Add(1)
+			return
+		}
+		if _, ok := b.Board.Add(msg.CardType, msg.Text, msg.Author); !ok {
+			b.Dropped.Add(1)
+			return
+		}
+		b.sendBoard()
+	case "board-edit":
+		if len(msg.Text) > 2<<10 || !b.Board.Edit(msg.ID, msg.Text, msg.Author) {
+			b.Dropped.Add(1)
+			return
+		}
+		b.sendBoard()
+	case "board-move":
+		if !b.Board.Move(msg.ID, msg.ToIndex) {
+			b.Dropped.Add(1)
+			return
+		}
+		b.sendBoard()
+	case "board-del":
+		if !b.Board.Delete(msg.ID) {
+			b.Dropped.Add(1)
+			return
+		}
+		b.sendBoard()
 	default:
 		b.Dropped.Add(1)
+	}
+}
+
+func (b *Broker) sendBoard() {
+	_ = b.link.WriteControl(map[string]any{"type": "board-state", "cards": b.Board.Cards()})
+	if b.OnBoardChange != nil {
+		b.OnBoardChange(b.Board.Cards())
 	}
 }
 
