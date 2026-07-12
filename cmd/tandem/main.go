@@ -22,6 +22,7 @@ import (
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
+	"github.com/mherzog4/tandem/internal/recap"
 	"github.com/mherzog4/tandem/internal/redact"
 	"github.com/mherzog4/tandem/internal/signer"
 )
@@ -29,7 +30,12 @@ import (
 // version is overridden at release time via -ldflags "-X main.version=...".
 var version = "0.0.1-dev"
 
-func main() {
+// main is a thin wrapper so run's defers (recap write, link close,
+// extractor stop, redaction summary) actually execute — os.Exit skips
+// deferred calls, so the exit code must return up to here.
+func main() { os.Exit(run()) }
+
+func run() int {
 	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); empty runs unshared")
 	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
 	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
@@ -39,12 +45,12 @@ func main() {
 	flag.Parse()
 	if *showVersion {
 		fmt.Println("tandem", version)
-		return
+		return 0
 	}
 	argv := flag.Args()
 	if len(argv) == 0 {
 		fmt.Fprintln(os.Stderr, "usage: tandem [--relay ws://host:port] <command> [args...]")
-		os.Exit(2)
+		return 2
 	}
 
 	opts := ptywrap.Options{}
@@ -77,6 +83,7 @@ func main() {
 		// changed since the last submit, so the agent can be told to
 		// re-read it (CLAUDE.md imports load at conversation start only).
 		var domainDirty atomic.Bool
+		var recorder *recap.Recorder
 		if cwd, err := os.Getwd(); err == nil {
 			// Preload the Board from a previous session's domain.yaml
 			// (FR20): the model accretes across meetings.
@@ -86,6 +93,19 @@ func main() {
 				b.Board.Load(cards)
 				fmt.Fprintf(os.Stderr, "tandem: domain board preloaded — %d confirmed card(s) from %s\n", len(cards), domainfile.YAMLName)
 			}
+			// Post-session recap (FR18): snapshot start, record submits,
+			// write markdown + broadcast to guests on exit.
+			rec := recap.New(b.Board.Cards())
+			defer func() {
+				path, md, err := rec.WriteFile(b.Board.Cards(), cwd)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "tandem: writing recap: %v\n", err)
+					return
+				}
+				fmt.Fprintf(os.Stderr, "tandem: session recap written to %s\n", path)
+				_ = link.WriteControl(map[string]any{"type": "recap", "markdown": md})
+			}()
+			recorder = rec
 			b.OnBoardChange = func(cards []board.Card) {
 				wrote, err := domainfile.WriteFiles(cwd, cards)
 				if err != nil {
@@ -166,9 +186,12 @@ func main() {
 				}
 			},
 			0x1D: func() { // Ctrl-] : submit the Composer buffer
-				text, _ := b.Flush()
+				text, stats := b.Flush()
 				if text == "" {
 					return
+				}
+				if recorder != nil {
+					recorder.RecordSubmit(text, stats)
 				}
 				if domainDirty.Swap(false) {
 					text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
@@ -200,7 +223,7 @@ func main() {
 	code, err := ptywrap.Run(argv, opts)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "tandem:", err)
-		os.Exit(1)
+		return 1
 	}
-	os.Exit(code)
+	return code
 }

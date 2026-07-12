@@ -347,7 +347,27 @@ func (l *Link) enqueue(kind byte, body []byte) {
 	}
 }
 
+// Close flushes any queued frames (e.g. the final recap) best-effort,
+// then shuts the link down.
 func (l *Link) Close() error {
-	l.closeOne.Do(func() { close(l.done) })
+	l.closeOne.Do(func() {
+		// Drain the queue so the final recap frame is handed to the
+		// writer, then give the in-flight conn.Write a moment to reach
+		// the relay before we tear the connection down.
+		deadline := time.After(2 * time.Second)
+		for {
+			select {
+			case <-deadline:
+			default:
+				if len(l.outbound) > 0 || len(l.plainOut) > 0 {
+					time.Sleep(20 * time.Millisecond)
+					continue
+				}
+			}
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+		close(l.done)
+	})
 	return nil
 }

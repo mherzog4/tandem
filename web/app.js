@@ -579,6 +579,14 @@
         shadow = comp.chars.join("");
         cinput.value = shadow;
         renderMirror();
+      } else if (ctrl.type === "recap" && typeof ctrl.markdown === "string") {
+        // Session ended: show the recap over everything. Rendered as
+        // plain text (no markdown lib) to keep the guest bundle
+        // dependency-free and avoid any injection surface.
+        const overlay = document.getElementById("recap");
+        overlay.querySelector("pre").textContent = ctrl.markdown;
+        overlay.style.display = "flex";
+        statusEl.textContent = "session ended";
       } else if (ctrl.type === "submitted") {
         statusEl.textContent = "prompt sent ✓";
       } else if (ctrl.type === "highlight" && ctrl.author !== name) {
