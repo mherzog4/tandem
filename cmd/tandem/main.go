@@ -12,7 +12,9 @@ import (
 
 	"sync/atomic"
 
+	"github.com/mherzog4/tandem/internal/board"
 	"github.com/mherzog4/tandem/internal/broker"
+	"github.com/mherzog4/tandem/internal/domainfile"
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
@@ -52,7 +54,19 @@ func main() {
 		b := broker.New(link)
 		go b.Run()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
+		fmt.Fprintf(os.Stderr, "tandem: your host link (confirm powers, keep private) %s&h=%s\n", link.JoinURL, b.HostToken)
 		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer")
+
+		// Serialize confirmed cards into the wrapped repo (FR14). The
+		// working directory is where the agent runs, so DOMAIN.md lands
+		// beside the code it describes.
+		if cwd, err := os.Getwd(); err == nil {
+			b.OnBoardChange = func(cards []board.Card) {
+				if _, err := domainfile.WriteFiles(cwd, cards); err != nil {
+					fmt.Fprintf(os.Stderr, "tandem: writing domain files: %v\r\n", err)
+				}
+			}
+		}
 		opts.Tap = link
 		// Secret masking (FR23) sits between the PTY tap and the link:
 		// strictly pre-encryption, guests only. The host terminal shows

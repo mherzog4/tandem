@@ -237,3 +237,52 @@ func TestBoardLifecycleViaBroker(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+// TestConfirmRequiresHostToken: guests cannot confirm or alias; the
+// host capability token gates both (FR13).
+func TestConfirmRequiresHostToken(t *testing.T) {
+	guest, cipher, b := setup(t)
+	readCtrl(t, guest, cipher, "composer-snapshot")
+
+	send(t, guest, cipher, `{"type":"board-add","cardType":"event","text":"ClaimDenied","author":"m"}`)
+	var id string
+	deadline := time.Now().Add(5 * time.Second)
+	for id == "" {
+		if time.Now().After(deadline) {
+			t.Fatal("no card")
+		}
+		st := readCtrl(t, guest, cipher, "board-state")
+		if cards, _ := st["cards"].([]any); len(cards) == 1 {
+			id = cards[0].(map[string]any)["id"].(string)
+		}
+	}
+
+	// No token / wrong token: dropped, card stays proposed.
+	before := b.Dropped.Load()
+	send(t, guest, cipher, `{"type":"board-confirm","id":"`+id+`","author":"m"}`)
+	send(t, guest, cipher, `{"type":"board-confirm","id":"`+id+`","author":"m","token":"guessed"}`)
+	send(t, guest, cipher, `{"type":"board-alias","id":"`+id+`","text":"Sneaky","author":"m","token":""}`)
+	for b.Dropped.Load() < before+3 {
+		if time.Now().After(deadline) {
+			t.Fatal("unauthorized confirms not dropped")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if b.Board.Cards()[0].State != "proposed" {
+		t.Fatal("card confirmed without host token")
+	}
+
+	// Correct token confirms and sets the alias.
+	send(t, guest, cipher, `{"type":"board-confirm","id":"`+id+`","author":"host","token":"`+b.HostToken+`"}`)
+	send(t, guest, cipher, `{"type":"board-alias","id":"`+id+`","text":"ClaimDeniedEvent","author":"host","token":"`+b.HostToken+`"}`)
+	for {
+		if time.Now().After(deadline) {
+			t.Fatal("confirm with token failed")
+		}
+		c := b.Board.Cards()[0]
+		if c.State == "confirmed" && c.CodeName == "ClaimDeniedEvent" {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
