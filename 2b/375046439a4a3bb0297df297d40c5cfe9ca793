@@ -1,0 +1,30 @@
+internal/relay/relay.go
+  s_6f6ec78b82b8ab::t_8d9ec3bca12909 307-315
+internal/relay/relay_test.go
+  s_6f6ec78b82b8ab::t_0068b2bc7bdcaa 26,34
+  s_6f6ec78b82b8ab::t_3a562bb10cc281 57-59,62
+  s_6f6ec78b82b8ab::t_78332053ad3d54 73
+  s_6f6ec78b82b8ab::t_137d39d8321ba2 117-121
+web/index.html
+  s_6f6ec78b82b8ab::t_036336e33224f9 17-19
+  s_6f6ec78b82b8ab::t_62d4a8a1568ea8 147
+web/app.js
+  s_6f6ec78b82b8ab::t_6de95c6fa3ad44 291-315
+  s_6f6ec78b82b8ab::t_fadfdf56b76fff 217-219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "2b375046439a4a3bb0297df297d40c5cfe9ca793",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
