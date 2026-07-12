@@ -1,0 +1,37 @@
+go.mod
+  s_6f6ec78b82b8ab::t_28e31c996e8635 10
+internal/relay/limits.go
+  s_6f6ec78b82b8ab::t_8ee0f196b712c9 1-3,5-11,13-94,115-122
+  s_6f6ec78b82b8ab::t_3bf3eb98aa13b1 4,12
+  s_6f6ec78b82b8ab::t_ea02ea5c544fb8 95-114
+internal/relay/relay.go
+  s_6f6ec78b82b8ab::t_1e0e1d8b16d1eb 298,309,317
+  s_6f6ec78b82b8ab::t_7df963cfe26493 92-101
+  s_6f6ec78b82b8ab::t_966424d7e80245 161-173,183-186,194
+  s_6f6ec78b82b8ab::t_4f2ba3012a1eee 220
+  s_6f6ec78b82b8ab::t_fe4e5c277f47df 62-66,69-71,73-88
+  s_6f6ec78b82b8ab::t_e6a950d722ad1e 17,19
+internal/relay/relay_test.go
+  s_6f6ec78b82b8ab::t_17b88ffb89b032 6,319-346
+  s_6f6ec78b82b8ab::t_d93aace6eec78b 256-318,347-348
+README.md
+  s_6f6ec78b82b8ab::t_1099b91c1318f4 58-69
+go.sum
+  s_6f6ec78b82b8ab::t_85e3bc8db2e609 43-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "c70d835a7c0666f1257d28b2c17da8e0df91080b",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
