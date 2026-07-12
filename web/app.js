@@ -121,6 +121,9 @@
               term.resize(ctrl.cols, ctrl.rows);
             } else if (ctrl.type === "shutter") {
               statusEl.textContent = ctrl.on ? "⏸ host paused sharing" : "live";
+              // Full overlay: guests must never sit on a frozen frame of
+              // possibly sensitive content (FR4).
+              document.getElementById("shutter").style.display = ctrl.on ? "flex" : "none";
             }
           } catch { /* ignore malformed control */ }
         }

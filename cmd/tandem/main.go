@@ -7,7 +7,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -32,8 +31,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	var tap io.Writer
-	var onResize func(cols, rows uint16)
+	opts := ptywrap.Options{}
 	if *relayURL != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		link, err := hostlink.Connect(ctx, *relayURL)
@@ -44,13 +42,29 @@ func main() {
 		}
 		defer link.Close()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
-		tap = link
-		onResize = func(cols, rows uint16) {
+		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ toggles the privacy shutter")
+		opts.Tap = link
+		opts.OnResize = func(cols, rows uint16) {
 			_ = link.WriteControl(map[string]any{"type": "resize", "cols": cols, "rows": rows})
+		}
+		// Privacy shutter (FR4) on Ctrl-\. The byte is swallowed before
+		// the child, so the wrapped TUI never sees it (and loses its
+		// SIGQUIT binding — documented trade-off).
+		shuttered := false
+		opts.InterceptKey = 0x1C
+		opts.OnIntercept = func() {
+			shuttered = !shuttered
+			link.SetShuttered(shuttered)
+			if shuttered {
+				// Bell + title: visible without corrupting the TUI.
+				fmt.Fprint(os.Stdout, "\a\033]0;tandem ⏸ SHARING PAUSED\007")
+			} else {
+				fmt.Fprint(os.Stdout, "\a\033]0;tandem ● sharing live\007")
+			}
 		}
 	}
 
-	code, err := ptywrap.Run(argv, tap, onResize)
+	code, err := ptywrap.Run(argv, opts)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "tandem:", err)
 		os.Exit(1)

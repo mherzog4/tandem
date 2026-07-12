@@ -57,6 +57,7 @@ type Link struct {
 
 	mu         sync.Mutex
 	scrollback []byte
+	shuttered  bool
 }
 
 // Connect dials the relay's /ws/host endpoint, waits for the session
@@ -186,6 +187,14 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 				// history, not a blank screen. Broadcast resets existing
 				// guests too — idempotent since replay starts with reset.
 				l.enqueueReplay()
+				// A guest joining mid-shutter missed the state change;
+				// re-broadcast so they show the paused card.
+				l.mu.Lock()
+				shuttered := l.shuttered
+				l.mu.Unlock()
+				if shuttered {
+					_ = l.WriteControl(map[string]any{"type": "shutter", "on": true})
+				}
 			}
 			continue
 		}
@@ -203,8 +212,16 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 // Write records PTY output in the scrollback and queues one sealed
 // frame. It never fails and never blocks on the network, so the PTY
 // tee keeps flowing during relay outages (NFR3). Satisfies io.Writer.
+//
+// While the privacy shutter is on (FR4), output is discarded entirely:
+// not sent, not recorded. Shuttered content can therefore never leak
+// through a later scrollback replay.
 func (l *Link) Write(p []byte) (int, error) {
 	l.mu.Lock()
+	if l.shuttered {
+		l.mu.Unlock()
+		return len(p), nil
+	}
 	l.scrollback = append(l.scrollback, p...)
 	if over := len(l.scrollback) - ScrollbackMax; over > 0 {
 		l.scrollback = l.scrollback[over:]
@@ -212,6 +229,19 @@ func (l *Link) Write(p []byte) (int, error) {
 	l.mu.Unlock()
 	l.enqueue(FramePTY, p)
 	return len(p), nil
+}
+
+// SetShuttered toggles the privacy shutter. Guests are told the state;
+// on unshutter they also get a fresh replay so their view repaints from
+// the (shutter-free) scrollback.
+func (l *Link) SetShuttered(on bool) {
+	l.mu.Lock()
+	l.shuttered = on
+	l.mu.Unlock()
+	_ = l.WriteControl(map[string]any{"type": "shutter", "on": on})
+	if !on {
+		l.enqueueReplay()
+	}
 }
 
 // WriteControl seals and queues a JSON control message to guests.

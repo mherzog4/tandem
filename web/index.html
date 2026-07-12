@@ -17,6 +17,11 @@
   #term { padding: 8px; }
   #app { display: none; }
   .err { color: #f85149; }
+  #shutter { display: none; position: fixed; inset: 0; background: #0d1117f2; z-index: 10;
+             align-items: center; justify-content: center; text-align: center; }
+  #shutter .card { font-size: 22px; line-height: 1.6; background: #161b22; border: 1px solid #30363d;
+                   border-radius: 12px; padding: 32px 48px; }
+  #shutter small { color: #8b949e; }
 </style>
 </head>
 <body>
@@ -34,6 +39,9 @@
     <span class="badge" title="Guests can watch and compose, never execute">view-only</span>
   </div>
   <div id="term"></div>
+  <div id="shutter">
+    <div class="card">⏸<br>Host paused sharing<br><small>the view resumes when they unpause</small></div>
+  </div>
 </div>
 <script src="/static/vendor/xterm.min.js"></script>
 <script src="/static/app.js"></script>
