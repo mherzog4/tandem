@@ -22,6 +22,26 @@
   #shutter .card { font-size: 22px; line-height: 1.6; background: #161b22; border: 1px solid #30363d;
                    border-radius: 12px; padding: 32px 48px; }
   #shutter small { color: #8b949e; }
+  #main { display: flex; height: calc(100vh - 31px); }
+  #term { flex: 1; min-width: 0; }
+  #composer { width: 340px; display: flex; flex-direction: column; border-left: 1px solid #30363d; background: #10151c; }
+  #chead { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #30363d; }
+  #chead small { color: #8b949e; display: block; }
+  #cwrap { position: relative; flex: 1; }
+  #cmirror, #cinput {
+    position: absolute; inset: 0; padding: 10px; margin: 0; border: 0;
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-word; overflow-y: auto;
+  }
+  #cmirror { color: #e6edf3; pointer-events: none; }
+  #cmirror .caret { border-left: 2px solid; margin-left: -1px; }
+  #cinput {
+    background: transparent; color: transparent; caret-color: #e6edf3;
+    resize: none; outline: none; width: 100%; height: 100%;
+  }
+  #cfoot { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-top: 1px solid #30363d; font-size: 12px; }
+  #cauthors { flex: 1; color: #8b949e; }
+  #cfoot button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -39,7 +59,17 @@
     <span class="badge" title="Guests can watch and compose, never execute">view-only</span>
     <span id="lat" style="margin-left:auto;color:#8b949e"></span>
   </div>
-  <div id="term"></div>
+  <div id="main">
+    <div id="term"></div>
+    <div id="composer">
+      <div id="chead">Prompt Composer <small>everyone edits · only the host can send</small></div>
+      <div id="cwrap">
+        <div id="cmirror" aria-hidden="true"></div>
+        <textarea id="cinput" spellcheck="false" placeholder="Type what should happen, in your words…"></textarea>
+      </div>
+      <div id="cfoot"><span id="cauthors"></span><button id="cundo" title="Undo your last edit">undo mine</button></div>
+    </div>
+  </div>
   <div id="shutter">
     <div class="card">⏸<br>Host paused sharing<br><small>the view resumes when they unpause</small></div>
   </div>
