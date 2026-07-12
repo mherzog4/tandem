@@ -10,8 +10,11 @@ import (
 	"os"
 	"time"
 
+	"sync/atomic"
+
 	"github.com/mherzog4/tandem/internal/broker"
 	"github.com/mherzog4/tandem/internal/hostlink"
+	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
 	"github.com/mherzog4/tandem/internal/signer"
 )
@@ -21,6 +24,7 @@ var version = "0.0.1-dev"
 
 func main() {
 	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); empty runs unshared")
+	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
 	showVersion := flag.Bool("version", false, "print version")
 	flag.Parse()
 	if *showVersion {
@@ -84,6 +88,22 @@ func main() {
 				}
 				injector.Submit(sign.Sign(text))
 			},
+		}
+
+		// Live mirroring (issue #13): opt-in, pauses while the host
+		// types, degrades to nothing worse than submit-time injection.
+		if *mirrorLive {
+			var lastKey atomic.Int64
+			opts.OnHostInput = func() { lastKey.Store(time.Now().UnixNano()) }
+			mir := mirror.New(
+				func(raw string) { injector.Submit(sign.SignRaw(raw)) },
+				func() bool { return time.Since(time.Unix(0, lastKey.Load())) < time.Second },
+			)
+			b.OnChange = mir.Update
+			// After a submit the agent clears its input line; forget
+			// the mirrored state so the next compose starts clean.
+			prevSubmit := opts.Intercepts[0x1D]
+			opts.Intercepts[0x1D] = func() { mir.Reset(); prevSubmit() }
 		}
 	}
 

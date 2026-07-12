@@ -29,16 +29,25 @@ func (inj *Injector) Submit(st signer.SignedText) {
 	}
 }
 
-// serve verifies and writes submissions until the PTY closes. Text is
-// wrapped in bracketed paste so multi-line buffers land as one paste in
-// agent TUIs (and modern readline), then the submit key is sent.
+// serve verifies and writes submissions until the PTY closes.
+//
+// Submit mode wraps text in bracketed paste so multi-line buffers land
+// as one paste in agent TUIs (and modern readline), then sends the
+// submit key. Raw mode (live mirroring) writes the bytes verbatim —
+// the mirror layer composes its own backspace/paste sequences.
 func (inj *Injector) serve(ptmx io.Writer) {
 	for st := range inj.ch {
 		if err := inj.verifier.Verify(st); err != nil {
 			fmt.Fprintf(os.Stderr, "tandem: REJECTED injected input (%v)\r\n", err)
 			continue
 		}
-		if _, err := fmt.Fprintf(ptmx, "\x1b[200~%s\x1b[201~\r", st.Text); err != nil {
+		var err error
+		if st.Raw {
+			_, err = io.WriteString(ptmx, st.Text)
+		} else {
+			_, err = fmt.Fprintf(ptmx, "\x1b[200~%s\x1b[201~\r", st.Text)
+		}
+		if err != nil {
 			return
 		}
 	}
