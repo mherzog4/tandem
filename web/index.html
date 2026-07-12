@@ -29,6 +29,12 @@
   #consent small { color: #8b949e; }
   #consent button { font-size: 15px; padding: 8px 20px; border-radius: 6px; border: 0; background: #da3633; color: white; cursor: pointer; }
   #email[hidden] { display: none; }
+  #recap { display: none; position: fixed; inset: 0; background: #0d1117f8; z-index: 30;
+           align-items: center; justify-content: center; }
+  #recap .sheet { background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+                  padding: 20px 28px; max-width: 760px; max-height: 84vh; overflow: auto; }
+  #recap h3 { margin: 0 0 10px; }
+  #recap pre { white-space: pre-wrap; word-break: break-word; font: 13px/1.5 ui-monospace, Menlo, monospace; margin: 0; }
   #main { display: flex; height: calc(100vh - 31px); }
   #termwrap { flex: 1; min-width: 0; position: relative; }
   #pointer-layer { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
@@ -165,6 +171,12 @@
   </div>
   <div id="shutter">
     <div class="card">⏸<br>Host paused sharing<br><small>the view resumes when they unpause</small></div>
+  </div>
+  <div id="recap">
+    <div class="sheet">
+      <h3>Session recap</h3>
+      <pre></pre>
+    </div>
   </div>
   <div id="consent">
     <div class="card">🔴<br>This session is being recorded<br>

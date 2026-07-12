@@ -66,6 +66,18 @@ func Run(argv []string, opts Options) (int, error) {
 	}()
 	winch <- syscall.SIGWINCH
 
+	// SIGTERM/SIGINT to the daemon (host closes the window): terminate
+	// the child so the PTY reaches EOF and Run returns, letting the
+	// caller's deferred cleanup (recap, link close) actually run.
+	termSig := make(chan os.Signal, 1)
+	signal.Notify(termSig, syscall.SIGTERM, syscall.SIGINT)
+	defer signal.Stop(termSig)
+	go func() {
+		if _, ok := <-termSig; ok && cmd.Process != nil {
+			_ = cmd.Process.Signal(syscall.SIGTERM)
+		}
+	}()
+
 	// Raw mode so the child TUI sees keystrokes unmangled. Skipped when
 	// stdin is not a terminal (tests, pipes).
 	if term.IsTerminal(int(os.Stdin.Fd())) {
