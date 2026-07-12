@@ -23,7 +23,7 @@ func dial(t *testing.T, url string) *websocket.Conn {
 	return c
 }
 
-func readJSON(t *testing.T, c *websocket.Conn) map[string]string {
+func readJSON(t *testing.T, c *websocket.Conn) map[string]any {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -31,7 +31,7 @@ func readJSON(t *testing.T, c *websocket.Conn) map[string]string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var m map[string]string
+	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
 		t.Fatalf("bad json %q: %v", data, err)
 	}
@@ -54,10 +54,12 @@ func setupWithToken(t *testing.T) (base string, host *websocket.Conn, sessionID,
 	if hello["type"] != "session" || hello["id"] == "" || hello["resumeToken"] == "" {
 		t.Fatalf("bad hello: %v", hello)
 	}
-	if hello["joinURL"] != "http://relay.test/s/"+hello["id"] {
+	id, _ := hello["id"].(string)
+	token, _ := hello["resumeToken"].(string)
+	if hello["joinURL"] != "http://relay.test/s/"+id {
 		t.Fatalf("bad joinURL: %v", hello["joinURL"])
 	}
-	return base, host, hello["id"], hello["resumeToken"]
+	return base, host, id, token
 }
 
 // TestHostResume: a host that drops can reclaim its session within the
@@ -68,7 +70,7 @@ func TestHostResume(t *testing.T) {
 
 	guest := dial(t, base+"/ws/join/"+id+"?name=g")
 	defer guest.Close(websocket.StatusNormalClosure, "")
-	readJSON(t, guest) // presence join
+	readJSON(t, guest) // roster snapshot (newcomer's first message)
 
 	// Host connection blips.
 	host.Close(websocket.StatusAbnormalClosure, "network blip")
@@ -112,7 +114,11 @@ func TestHostToGuestForwardingAndPresence(t *testing.T) {
 	guest := dial(t, base+"/ws/join/"+id+"?name=Marcus")
 	defer guest.Close(websocket.StatusNormalClosure, "")
 
-	// Both parties see the join presence event.
+	// The newcomer first receives a roster snapshot of who is present.
+	if r := readJSON(t, guest); r["type"] != "roster" {
+		t.Fatalf("expected roster snapshot for newcomer, got %v", r)
+	}
+	// Both parties then see the join presence event.
 	for _, c := range []*websocket.Conn{host, guest} {
 		p := readJSON(t, c)
 		if p["type"] != "presence" || p["event"] != "join" || p["name"] != "Marcus" {
