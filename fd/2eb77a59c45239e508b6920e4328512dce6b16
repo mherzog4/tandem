@@ -1,0 +1,25 @@
+internal/hostlink/hostlink_test.go
+  s_6f6ec78b82b8ab::t_b8aa22a056f6e0 1-94
+internal/e2e/e2e.go
+  s_6f6ec78b82b8ab::t_65b6cdda9815c1 1-98
+internal/e2e/e2e_test.go
+  s_6f6ec78b82b8ab::t_41d3a801068df9 1-52
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_8488ca47dc1851 2-4,14,19-24,28-30,50-62,77-80,82,88-89,93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "fd2eb77a59c45239e508b6920e4328512dce6b16",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
