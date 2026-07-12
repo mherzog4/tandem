@@ -117,8 +117,12 @@ func sanitize(s string) []rune {
 }
 
 // diffKeystrokes produces the byte sequence converging the input line
-// from old to new: backspaces to the common prefix, then the suffix in
-// a bracketed paste.
+// from old to new: backspaces to the common prefix, then the new suffix
+// typed raw. Raw (not bracketed paste) so the preview renders cleanly on
+// every agent — shells don't strip paste markers, Claude Code does, and
+// raw sidesteps both. sanitize() has already dropped control runes and
+// flattened newlines, so the raw suffix carries no escape sequences.
+// The authoritative submit (Ctrl-]) still uses bracketed paste + Enter.
 func diffKeystrokes(old, new []rune) string {
 	p := 0
 	for p < len(old) && p < len(new) && old[p] == new[p] {
@@ -127,9 +131,7 @@ func diffKeystrokes(old, new []rune) string {
 	var b strings.Builder
 	b.WriteString(strings.Repeat("\x7f", len(old)-p))
 	if p < len(new) {
-		b.WriteString("\x1b[200~")
 		b.WriteString(string(new[p:]))
-		b.WriteString("\x1b[201~")
 	}
 	if b.Len() == 0 {
 		return ""

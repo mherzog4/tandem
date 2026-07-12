@@ -28,11 +28,11 @@ func wait() { time.Sleep(250 * time.Millisecond) }
 
 func TestDiffKeystrokes(t *testing.T) {
 	cases := []struct{ old, new, want string }{
-		{"", "abc", "\x1b[200~abc\x1b[201~"},
-		{"abc", "abx", "\x7f\x1b[200~x\x1b[201~"},
+		{"", "abc", "abc"},
+		{"abc", "abx", "\x7fx"},
 		{"abc", "ab", "\x7f"},
 		{"abc", "abc", ""},
-		{"abc", "xyz", "\x7f\x7f\x7f\x1b[200~xyz\x1b[201~"},
+		{"abc", "xyz", "\x7f\x7f\x7fxyz"},
 	}
 	for _, c := range cases {
 		got := diffKeystrokes([]rune(c.old), []rune(c.new))
@@ -56,12 +56,12 @@ func TestUpdateDebouncesAndConverges(t *testing.T) {
 	m.Update("he")
 	m.Update("hello")
 	wait()
-	if got := c.all(); got != "\x1b[200~hello\x1b[201~" {
+	if got := c.all(); got != "hello" {
 		t.Fatalf("burst mirrored as %q", got)
 	}
 	m.Update("help")
 	wait()
-	if got := c.all(); !strings.HasSuffix(got, "\x7f\x7f\x1b[200~p\x1b[201~") {
+	if got := c.all(); !strings.HasSuffix(got, "\x7f\x7fp") {
 		t.Fatalf("edit mirrored as %q", got)
 	}
 }
@@ -103,7 +103,7 @@ func TestClearAndReset(t *testing.T) {
 	}
 	m.Update("hi")
 	wait()
-	if got := c.all(); !strings.HasSuffix(got, "\x1b[200~hi\x1b[201~") {
+	if got := c.all(); !strings.HasSuffix(got, "hi") {
 		t.Fatalf("post-clear compose = %q", got)
 	}
 }
