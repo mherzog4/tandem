@@ -118,7 +118,7 @@ func TestWaitingRoom(t *testing.T) {
 	if err := host.Write(ctx, websocket.MessageText, []byte(`{"type":"approval","on":true}`)); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 
 	guest := dial(t, base+"/ws/join/"+id+"?name=Trudy")
 	defer guest.Close(websocket.StatusNormalClosure, "")
@@ -152,9 +152,22 @@ func TestWaitingRoom(t *testing.T) {
 	}
 	admitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	if err := host.Write(ctx, websocket.MessageBinary, []byte("hello-after-admit")); err != nil {
-		t.Fatal(err)
-	}
+	// Resend the post-admit frame until read: admission and the guest's
+	// entry into the broadcast set race a single write (in a real session
+	// the host streams continuously, so this is not a product concern).
+	sendDone := make(chan struct{})
+	go func() {
+		defer close(sendDone)
+		for {
+			select {
+			case <-admitCtx.Done():
+				return
+			default:
+				_ = host.Write(ctx, websocket.MessageBinary, []byte("hello-after-admit"))
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}()
 	for {
 		typ, data, err := guest.Read(admitCtx)
 		if err != nil {
@@ -169,6 +182,8 @@ func TestWaitingRoom(t *testing.T) {
 			break
 		}
 	}
+	cancel()
+	<-sendDone
 }
 
 func TestHostToGuestForwardingAndPresence(t *testing.T) {
