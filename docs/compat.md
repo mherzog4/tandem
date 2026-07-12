@@ -17,15 +17,22 @@ to run it (the guest can never execute — their terminal has no stdin path).
 | Agent | With mirror (default) | Domain injection |
 |-------|----------------------|------------------|
 | Claude Code (`claude`, `claude-*`) | clean | managed `CLAUDE.md` include importing `DOMAIN.md` |
-| Known agent CLIs (see list) | clean | confirmed-card digest prepended at run (≤1 KiB) |
+| AGENTS.md-reading agents (see list) | clean | managed `AGENTS.md` block pointing at `DOMAIN.md` |
+| Other known agent CLIs (see list) | clean | confirmed-card digest prepended at run (≤1 KiB) |
 | Plain shells / anything else | clean | with `--no-mirror`, `Ctrl-]` copies the prompt to the host clipboard (OSC 52) |
 
-**Prepend tier — recognized by binary name** (`internal/adapter/generic.go`):
-`codex`, `gemini`, `aider`, `droid` (Factory), `cursor-agent`, `amp`,
-`opencode`, `crush`, `goose`, `qwen`, `openhands`, `codebuff`, `plandex`/`pdx`,
-`grok`, `auggie`, `forge`, `continue`/`cn`, `ra-aid`, `mentat`, `kode`.
+**AGENTS.md tier — recognized by binary name** (`internal/adapter/generic.go`):
+`codex`, `cursor-agent`, `amp`, `opencode`, `droid` (Factory). These read the
+AGENTS.md convention, so Tandem writes a managed block into `AGENTS.md` that
+tells the agent to read `DOMAIN.md` — the model auto-injects at session start
+like Claude Code, no per-prompt prepend. Register another with
+**`TANDEM_AGENTS_MD_AGENTS`** (comma-separated binary names).
 
-Register a harness not on this list with **`TANDEM_PREPEND_AGENTS`**
+**Prepend tier — recognized by binary name**: `gemini`, `aider`, `crush`,
+`goose`, `qwen`, `openhands`, `codebuff`, `plandex`/`pdx`, `grok`, `auggie`,
+`forge`, `continue`/`cn`, `ra-aid`, `mentat`, `kode`.
+
+Register a harness not on either list with **`TANDEM_PREPEND_AGENTS`**
 (comma-separated binary names) — no code change needed:
 
 ```sh

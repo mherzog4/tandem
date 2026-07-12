@@ -16,8 +16,12 @@ type Kind int
 const (
 	// KindClaude: full support — managed CLAUDE.md include (FR15).
 	KindClaude Kind = iota
-	// KindPrepend: Codex CLI / Gemini CLI / Aider — no native hook, so
-	// a compact domain digest is prepended to each submitted prompt.
+	// KindAgentsMD: agents that read the AGENTS.md convention (Codex,
+	// Cursor, Amp, opencode, Factory) — a managed AGENTS.md block points
+	// them at DOMAIN.md, so the model auto-injects like Claude Code.
+	KindAgentsMD
+	// KindPrepend: Gemini CLI / Aider and other CLIs with no native
+	// context file — a compact domain digest is prepended to each prompt.
 	KindPrepend
 	// KindClipboard: anything else — the domain digest is offered for
 	// the host to paste manually; the board stays fully functional.
@@ -28,33 +32,40 @@ const (
 // get the prompt-prepend digest. Extend at runtime (no code change) with
 // TANDEM_PREPEND_AGENTS, a comma-separated list of binary names.
 var knownPrepend = map[string]bool{
+	"gemini":    true, // Google Gemini CLI (reads GEMINI.md)
+	"aider":     true, // Aider (reads CONVENTIONS.md)
+	"crush":     true, // Charm Crush
+	"goose":     true, // Block Goose
+	"qwen":      true, // Qwen Code
+	"openhands": true, // OpenHands CLI
+	"codebuff":  true, // Codebuff
+	"plandex":   true, // Plandex
+	"pdx":       true, // Plandex (short)
+	"grok":      true, // Grok CLI
+	"auggie":    true, // Augment Auggie
+	"forge":     true, // Code-Forge
+	"continue":  true, // Continue CLI
+	"cn":        true, // Continue CLI (short)
+	"ra-aid":    true, // RA.Aid
+	"mentat":    true, // Mentat
+	"kode":      true, // Kode
+}
+
+// knownAgentsMD is the built-in set of CLIs that read the AGENTS.md
+// convention, so they get a managed AGENTS.md block instead of the prompt
+// prepend. Extend at runtime with TANDEM_AGENTS_MD_AGENTS.
+var knownAgentsMD = map[string]bool{
 	"codex":        true, // OpenAI Codex CLI
-	"gemini":       true, // Google Gemini CLI
-	"aider":        true, // Aider
-	"droid":        true, // Factory
 	"cursor-agent": true, // Cursor CLI
 	"amp":          true, // Sourcegraph Amp
 	"opencode":     true, // OpenCode
-	"crush":        true, // Charm Crush
-	"goose":        true, // Block Goose
-	"qwen":         true, // Qwen Code
-	"openhands":    true, // OpenHands CLI
-	"codebuff":     true, // Codebuff
-	"plandex":      true, // Plandex
-	"pdx":          true, // Plandex (short)
-	"grok":         true, // Grok CLI
-	"auggie":       true, // Augment Auggie
-	"forge":        true, // Code-Forge
-	"continue":     true, // Continue CLI
-	"cn":           true, // Continue CLI (short)
-	"ra-aid":       true, // RA.Aid
-	"mentat":       true, // Mentat
-	"kode":         true, // Kode
+	"droid":        true, // Factory
 }
 
 // Detect classifies argv into an injection Kind. Claude Code gets the
-// managed CLAUDE.md include; other known agent CLIs get the prepend
-// digest; anything unrecognized falls back to clipboard mode.
+// managed CLAUDE.md include; AGENTS.md-reading agents get a managed
+// AGENTS.md block; other known agent CLIs get the prepend digest; anything
+// unrecognized falls back to clipboard mode.
 func Detect(argv []string) Kind {
 	if IsClaude(argv) {
 		return KindClaude
@@ -63,6 +74,9 @@ func Detect(argv []string) Kind {
 		return KindClipboard
 	}
 	base := filepath.Base(argv[0])
+	if knownAgentsMD[base] || envAgentSet("TANDEM_AGENTS_MD_AGENTS")[base] {
+		return KindAgentsMD
+	}
 	if knownPrepend[base] || envPrependAgents()[base] {
 		return KindPrepend
 	}
@@ -71,8 +85,11 @@ func Detect(argv []string) Kind {
 
 // envPrependAgents parses TANDEM_PREPEND_AGENTS into a set so operators
 // can register a harness Tandem doesn't ship a default for.
-func envPrependAgents() map[string]bool {
-	raw := os.Getenv("TANDEM_PREPEND_AGENTS")
+func envPrependAgents() map[string]bool { return envAgentSet("TANDEM_PREPEND_AGENTS") }
+
+// envAgentSet parses a comma-separated env var into a set of binary names.
+func envAgentSet(envVar string) map[string]bool {
+	raw := os.Getenv(envVar)
 	if raw == "" {
 		return nil
 	}

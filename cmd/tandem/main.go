@@ -191,6 +191,12 @@ func run() int {
 				if err := adapter.EnsureClaudeInclude(cwd); err != nil {
 					fmt.Fprintf(os.Stderr, "tandem: CLAUDE.md include: %v\n", err)
 				}
+			case adapter.KindAgentsMD:
+				if err := adapter.EnsureAgentsInclude(cwd); err != nil {
+					fmt.Fprintf(os.Stderr, "tandem: AGENTS.md include: %v\n", err)
+				} else {
+					fmt.Fprintln(os.Stderr, "tandem: managed AGENTS.md block points the agent at DOMAIN.md")
+				}
 			case adapter.KindPrepend:
 				fmt.Fprintln(os.Stderr, "tandem: domain digest prepended to each submitted prompt")
 			case adapter.KindClipboard:

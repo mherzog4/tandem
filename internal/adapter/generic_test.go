@@ -14,13 +14,13 @@ func TestDetect(t *testing.T) {
 	}{
 		{[]string{"claude"}, KindClaude},
 		{[]string{"/usr/local/bin/claude", "--continue"}, KindClaude},
-		{[]string{"codex"}, KindPrepend},
+		{[]string{"codex"}, KindAgentsMD},
 		{[]string{"gemini", "chat"}, KindPrepend},
 		{[]string{"/opt/bin/aider"}, KindPrepend},
-		{[]string{"droid"}, KindPrepend},        // Factory
-		{[]string{"cursor-agent"}, KindPrepend}, // Cursor
-		{[]string{"amp"}, KindPrepend},          // Sourcegraph Amp
-		{[]string{"opencode", "run"}, KindPrepend},
+		{[]string{"droid"}, KindAgentsMD},        // Factory
+		{[]string{"cursor-agent"}, KindAgentsMD}, // Cursor
+		{[]string{"amp"}, KindAgentsMD},          // Sourcegraph Amp
+		{[]string{"opencode", "run"}, KindAgentsMD},
 		{[]string{"/usr/bin/goose"}, KindPrepend},
 		{[]string{"crush"}, KindPrepend},
 		{[]string{"bash"}, KindClipboard},
