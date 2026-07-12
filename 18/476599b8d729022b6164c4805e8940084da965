@@ -1,0 +1,43 @@
+web/app.js
+  s_6f6ec78b82b8ab::t_742f5aa167dfbc 192-195,207-212
+  s_6f6ec78b82b8ab::t_1584cde26868a7 163-164,167-172
+  s_6f6ec78b82b8ab::t_2f68a5a24e3c78 213
+internal/relay/relay_test.go
+  s_6f6ec78b82b8ab::t_83f0713df87ee9 111-140,145-152,155-163,166,168-173
+  s_6f6ec78b82b8ab::t_2e24249347d2d1 141-144,153-154,164-165,167
+web/index.html
+  s_6f6ec78b82b8ab::t_04d12eb4c8d55c 28-32
+  s_6f6ec78b82b8ab::t_dec02461ef9d66 229-232
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_46f94887d16b4b 341-360
+  s_6f6ec78b82b8ab::t_b2d8571ca89ac6 15
+  s_6f6ec78b82b8ab::t_bc8793eed2e9c0 106-125
+  s_6f6ec78b82b8ab::t_57e42534ff250f 56
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_2dedd4d9cff667 304-333
+  s_6f6ec78b82b8ab::t_75e6d9db2b8090 207-216
+  s_6f6ec78b82b8ab::t_ca2249ddb3b579 167
+  s_6f6ec78b82b8ab::t_32e2568d2f0c1f 64-67,73
+internal/relay/relay.go
+  s_6f6ec78b82b8ab::t_871dd067b2faf3 54-65
+  s_6f6ec78b82b8ab::t_5a0f1468c566d0 202
+  s_6f6ec78b82b8ab::t_edbeb61bb6d8fe 334-346
+  s_6f6ec78b82b8ab::t_92856e1cdd687e 261-262,264-291
+  s_6f6ec78b82b8ab::t_daa409b1623aa2 392-435
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "18476599b8d729022b6164c4805e8940084da965",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
