@@ -1,0 +1,26 @@
+cmd/relay/main.go
+  s_6f6ec78b82b8ab::t_d57193ed8ec038 19-22
+  s_6f6ec78b82b8ab::t_7009a406ed9c88 40-48
+README.md
+  s_6f6ec78b82b8ab::t_295cd5889bf12d 31,34-35,38-40,42-44,50,53-56
+Dockerfile
+  s_6f6ec78b82b8ab::t_830ca6c4501acb 12-15
+railway.json
+  s_6f6ec78b82b8ab::t_27fe84cf93fd31 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "b1f242eff7bdf1b50b3eb7e58f2b83d63bbd6976",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
