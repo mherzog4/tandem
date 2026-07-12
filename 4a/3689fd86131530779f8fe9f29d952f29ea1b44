@@ -1,0 +1,24 @@
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_382c0bbe484e7b 31-32
+  s_6f6ec78b82b8ab::t_7a04478cdfd55a 331-349
+  s_6f6ec78b82b8ab::t_2adb69b4bdceb8 51
+  s_6f6ec78b82b8ab::t_3ab6e244144db8 307-321
+CLAUDE.md
+  s_6f6ec78b82b8ab::t_7d6a9e196b1441 52-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "4a3689fd86131530779f8fe9f29d952f29ea1b44",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
