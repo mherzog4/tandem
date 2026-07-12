@@ -6,6 +6,25 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-12
+
+### Added
+- **AGENTS.md injection adapter.** Codex, Cursor, Amp, opencode, and Factory
+  now auto-inject the domain model via a managed `AGENTS.md` block pointing at
+  `DOMAIN.md`, instead of the per-prompt prepend digest.
+- **Reprint-link hotkey (`Ctrl-^`)** re-copies the join link to the clipboard
+  once the agent's TUI has hidden it.
+- **Title-bar presence**: the terminal title shows the sharing state and live
+  guest count.
+- **`tandem doctor`**: preflight checks for relay reachability, a controlling
+  terminal, and clipboard/paste notes.
+- **Homebrew install** via a formula in `HomebrewFormula/tandem.rb`, refreshed
+  on each release.
+
+### Changed
+- Running `tandem` with no command prints a short quickstart instead of a bare
+  usage line.
+
 ## [0.4.0] — 2026-07-12
 
 ### Added
