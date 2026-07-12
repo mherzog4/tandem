@@ -147,3 +147,45 @@ func TestWriteNeverBlocks(t *testing.T) {
 		t.Fatal("Write blocked under backpressure")
 	}
 }
+
+// TestShutterDropsOutput: shuttered output reaches neither live guests
+// nor the scrollback replay (FR4).
+func TestShutterDropsOutput(t *testing.T) {
+	ts := newTestSession(t)
+	guest := ts.joinGuest(t, "g")
+
+	ts.link.Write([]byte("public "))
+	ts.link.SetShuttered(true)
+	ts.link.Write([]byte("SECRET"))
+	ts.link.SetShuttered(false) // triggers replay
+	ts.link.Write([]byte(" more-public"))
+
+	// The join itself may enqueue an early (possibly empty) replay; scan
+	// replays until the unshutter one arrives, ensuring none leak.
+	for {
+		body := ts.readFrame(t, guest, FrameReplay)
+		if strings.Contains(string(body), "SECRET") {
+			t.Fatalf("shuttered content leaked into replay: %q", body)
+		}
+		if strings.Contains(string(body), "public") {
+			break
+		}
+	}
+
+	// Live PTY frames after unshutter flow again; SECRET never appears.
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case <-deadline:
+			t.Fatal("never saw post-shutter output")
+		default:
+		}
+		got := ts.readFrame(t, guest, FramePTY)
+		if strings.Contains(string(got), "SECRET") {
+			t.Fatalf("shuttered content leaked live: %q", got)
+		}
+		if strings.Contains(string(got), "more-public") {
+			return
+		}
+	}
+}

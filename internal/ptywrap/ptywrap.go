@@ -8,6 +8,7 @@
 package ptywrap
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"os/exec"
@@ -18,13 +19,25 @@ import (
 	"golang.org/x/term"
 )
 
+// Options tune a Run. All fields are optional.
+type Options struct {
+	// Tap receives a copy of every byte the child writes.
+	Tap io.Writer
+	// OnResize fires with the PTY dimensions at start and on every
+	// window-size change, so the share layer can keep guest renderers
+	// in sync.
+	OnResize func(cols, rows uint16)
+	// InterceptKey is a single byte the host daemon claims for itself
+	// (e.g. 0x1C, Ctrl-\, for the privacy shutter). When seen on stdin
+	// it is NOT forwarded to the child; OnIntercept fires instead.
+	InterceptKey byte
+	OnIntercept  func()
+}
+
 // Run executes argv inside a PTY, wiring the current process's terminal
-// through to it. Every byte the child writes is also copied to tap (may
-// be nil). onResize (may be nil) fires with the PTY dimensions at start
-// and on every window-size change, so the share layer can keep guest
-// renderers in sync. Blocks until the child exits and returns its exit
-// code.
-func Run(argv []string, tap io.Writer, onResize func(cols, rows uint16)) (int, error) {
+// through to it. Blocks until the child exits and returns its exit code.
+func Run(argv []string, opts Options) (int, error) {
+	tap, onResize := opts.Tap, opts.OnResize
 	cmd := exec.Command(argv[0], argv[1:]...)
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
@@ -59,7 +72,13 @@ func Run(argv []string, tap io.Writer, onResize func(cols, rows uint16)) (int, e
 	}
 
 	// Host stdin -> PTY. Sole writer to the child's input.
-	go func() { _, _ = io.Copy(ptmx, os.Stdin) }()
+	go func() {
+		if opts.InterceptKey != 0 && opts.OnIntercept != nil {
+			_ = copyIntercept(ptmx, os.Stdin, opts.InterceptKey, opts.OnIntercept)
+		} else {
+			_, _ = io.Copy(ptmx, os.Stdin)
+		}
+	}()
 
 	// PTY -> host stdout, tee'd to the tap.
 	out := io.Writer(os.Stdout)
@@ -76,4 +95,39 @@ func Run(argv []string, tap io.Writer, onResize func(cols, rows uint16)) (int, e
 		return -1, err
 	}
 	return 0, nil
+}
+
+// copyIntercept forwards src to dst byte-stream style, swallowing every
+// occurrence of key and firing onKey instead. The child never sees the
+// intercepted byte, so the hotkey works regardless of what the wrapped
+// TUI binds.
+func copyIntercept(dst io.Writer, src io.Reader, key byte, onKey func()) error {
+	buf := make([]byte, 4096)
+	for {
+		n, err := src.Read(buf)
+		if n > 0 {
+			chunk := buf[:n]
+			for {
+				i := bytes.IndexByte(chunk, key)
+				if i < 0 {
+					break
+				}
+				if i > 0 {
+					if _, werr := dst.Write(chunk[:i]); werr != nil {
+						return werr
+					}
+				}
+				onKey()
+				chunk = chunk[i+1:]
+			}
+			if len(chunk) > 0 {
+				if _, werr := dst.Write(chunk); werr != nil {
+					return werr
+				}
+			}
+		}
+		if err != nil {
+			return err
+		}
+	}
 }
