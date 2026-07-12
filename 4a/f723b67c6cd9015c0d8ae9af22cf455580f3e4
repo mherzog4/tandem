@@ -1,0 +1,28 @@
+internal/ptywrap/ptywrap.go
+  s_6f6ec78b82b8ab::t_6a674309c3e031 1-71
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_5d9a1ddb9c5dba 9-10,17-21,25-31
+internal/ptywrap/ptywrap_test.go
+  s_6f6ec78b82b8ab::t_c7092457368c60 1-28
+go.mod
+  s_6f6ec78b82b8ab::t_5f78b227a384c9 3-5,8
+  s_6f6ec78b82b8ab::t_8f173c3c7f0233 6-7,9-10
+go.sum
+  s_6f6ec78b82b8ab::t_bbf60cca8aaea3 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "4af723b67c6cd9015c0d8ae9af22cf455580f3e4",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
