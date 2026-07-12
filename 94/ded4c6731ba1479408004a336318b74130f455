@@ -1,0 +1,31 @@
+internal/relay/relay_test.go
+  s_6f6ec78b82b8ab::t_a5bfcf9c8e8287 1-119
+go.mod
+  s_6f6ec78b82b8ab::t_bcefc1e47d2c06 6
+internal/relay/relay.go
+  s_6f6ec78b82b8ab::t_aef3e4c652fe42 1-188
+cmd/relay/main.go
+  s_6f6ec78b82b8ab::t_0e04dfb61318af 1,3,7,9-10,12-13,19-23,25,27-28
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_84ce452ebdcaff 7-8,10,12,14,22-25,29-49
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_eab8f48e7c8d50 1-83
+go.sum
+  s_6f6ec78b82b8ab::t_4ce39ea40b99a5 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "94ded4c6731ba1479408004a336318b74130f455",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
