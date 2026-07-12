@@ -1,0 +1,30 @@
+docs/protocol.md
+  s_6f6ec78b82b8ab::t_8e4db491824831 46-47
+web/app.js
+  s_6f6ec78b82b8ab::t_17709c40a46be7 356-420
+  s_6f6ec78b82b8ab::t_1e40bf114dc9c2 447-450
+internal/broker/broker_test.go
+  s_6f6ec78b82b8ab::t_8a220d22d8fb8b 163-191
+web/index.html
+  s_6f6ec78b82b8ab::t_fe4130c401cb04 81-90
+  s_6f6ec78b82b8ab::t_e9e14ee0e94ec9 26-42
+internal/broker/broker.go
+  s_6f6ec78b82b8ab::t_140dd36052d7bd 57-59
+  s_6f6ec78b82b8ab::t_c21a37ffb3ac0c 107-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "814f4385e637368cb69e3fd7c0b65f749de823ef",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
