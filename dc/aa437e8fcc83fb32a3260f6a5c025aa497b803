@@ -1,0 +1,43 @@
+internal/ptywrap/ptywrap_test.go
+  s_6f6ec78b82b8ab::t_bdbcea4c9d59b3 39
+  s_6f6ec78b82b8ab::t_9a9e2d1f2bdfee 5
+  s_6f6ec78b82b8ab::t_c918805f4e3274 7,9-11,50-108
+internal/ptywrap/injector.go
+  s_6f6ec78b82b8ab::t_3d331d8e6c5ba7 1-45
+internal/signer/signer.go
+  s_6f6ec78b82b8ab::t_4fc5b74392b8c6 1-85
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_bb00ee9c483211 16
+  s_6f6ec78b82b8ab::t_5aafd21843def2 49
+  s_6f6ec78b82b8ab::t_81ebc27eb91447 54-67,69-86
+web/app.js
+  s_6f6ec78b82b8ab::t_fe7cbc9a5160ee 324-325
+internal/signer/signer_test.go
+  s_6f6ec78b82b8ab::t_e386457552a8ca 1-41
+internal/broker/broker.go
+  s_6f6ec78b82b8ab::t_f2b8f3c8a40d79 100-114
+internal/ptywrap/ptywrap.go
+  s_6f6ec78b82b8ab::t_6f3b5ce477c8e8 76,78-79,85-89
+  s_6f6ec78b82b8ab::t_27f887e9362ab0 109-112,128,142-150
+  s_6f6ec78b82b8ab::t_356d4a75ca4928 29-36
+  s_6f6ec78b82b8ab::t_b2e3e590ead192 119
+  s_6f6ec78b82b8ab::t_ebb05ee37caccf 90,151
+docs/protocol.md
+  s_6f6ec78b82b8ab::t_e80d3a556b05d2 55-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "dcaa437e8fcc83fb32a3260f6a5c025aa497b803",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
