@@ -55,6 +55,18 @@ Sessions live in the relay's memory, so keep it at **one** replica for now
 health-checks `/healthz`. The relay never sees plaintext or the encryption
 key regardless of where it runs.
 
+Public-endpoint limits (all optional env vars, sane defaults):
+
+| Var | Default | Meaning |
+|-----|---------|---------|
+| `TANDEM_MAX_SESSIONS` | 200 | concurrent sessions cap |
+| `TANDEM_CONN_PER_MIN` | 30 | new connections/minute per IP |
+| `TANDEM_CONN_BURST` | 10 | per-IP burst allowance |
+
+The relay pings each connection every 30s and reaps dead peers, so a host
+whose network drops doesn't hold a session (a live-but-quiet session is kept).
+It reads `X-Forwarded-For` for the real client IP behind the proxy.
+
 ## Develop
 
 ```sh

@@ -14,7 +14,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -57,13 +59,46 @@ type Server struct {
 	sessions map[string]*session
 	// BaseURL is the externally visible URL used to build join links.
 	BaseURL string
+	// MaxSessions caps concurrent sessions (0 = unlimited).
+	MaxSessions int
+	limiter     *ipLimiter
+	// Logf logs operational events; defaults to the stdlib logger.
+	Logf func(format string, args ...any)
 }
 
+// NewServer builds a relay. Caps are read from the environment for a
+// public deployment: TANDEM_MAX_SESSIONS, TANDEM_CONN_PER_MIN,
+// TANDEM_CONN_BURST (all optional).
 func NewServer(baseURL string) *Server {
-	return &Server{sessions: make(map[string]*session), BaseURL: strings.TrimSuffix(baseURL, "/")}
+	return &Server{
+		sessions:    make(map[string]*session),
+		BaseURL:     strings.TrimSuffix(baseURL, "/"),
+		MaxSessions: envInt(os.Getenv, "TANDEM_MAX_SESSIONS", DefaultMaxSessions),
+		limiter: newIPLimiter(
+			envInt(os.Getenv, "TANDEM_CONN_PER_MIN", DefaultConnPerMinIP),
+			envInt(os.Getenv, "TANDEM_CONN_BURST", DefaultConnBurstIP),
+		),
+		Logf: log.Printf,
+	}
+}
+
+func (s *Server) logf(format string, args ...any) {
+	if s.Logf != nil {
+		s.Logf(format, args...)
+	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Per-IP connection rate limit on the WebSocket endpoints (a public
+	// relay is an open endpoint). Static assets and /healthz are exempt.
+	if strings.HasPrefix(r.URL.Path, "/ws/") {
+		if ip := clientIP(r); !s.limiter.allow(ip) {
+			s.logf("relay: rate-limited %s from %s", r.URL.Path, ip)
+			http.Error(w, "too many connections, slow down", http.StatusTooManyRequests)
+			return
+		}
+	}
+
 	switch {
 	case r.URL.Path == "/ws/host":
 		s.serveHost(w, r)
@@ -123,6 +158,19 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 		id, sess = resumeID, cand
 	}
 
+	// Global session cap, checked before accepting a NEW session (resumes
+	// reclaim an existing one and are exempt).
+	if sess == nil && s.MaxSessions > 0 {
+		s.mu.Lock()
+		full := len(s.sessions) >= s.MaxSessions
+		s.mu.Unlock()
+		if full {
+			s.logf("relay: session cap %d reached, rejecting host from %s", s.MaxSessions, clientIP(r))
+			http.Error(w, "relay at capacity, try again later", http.StatusServiceUnavailable)
+			return
+		}
+	}
+
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		return
@@ -132,6 +180,10 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 	// connection mid-replay. Guests keep the small default — they only
 	// ever send composer ops.
 	conn.SetReadLimit(4 << 20)
+	// Keepalive: detect a dead host (network gone, no TCP FIN) so its
+	// session doesn't linger. A live-but-quiet host (agent thinking)
+	// answers pings and is not reaped.
+	go keepalive(conn)
 
 	if sess == nil {
 		id = newSessionID()
@@ -139,6 +191,7 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 		s.mu.Lock()
 		s.sessions[id] = sess
 		s.mu.Unlock()
+		s.logf("relay: session %s created from %s", id, clientIP(r))
 	} else {
 		sess.mu.Lock()
 		if sess.reapTimer != nil {
@@ -164,6 +217,7 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 				g.Close(websocket.StatusGoingAway, "host left")
 			}
 			sess.mu.Unlock()
+			s.logf("relay: session %s reaped (host did not return)", id)
 		})
 		sess.mu.Unlock()
 		conn.Close(websocket.StatusNormalClosure, "")
@@ -241,6 +295,7 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 	if err != nil {
 		return
 	}
+	go keepalive(conn) // reap a dead guest conn
 
 	sess.mu.Lock()
 	if 1+len(sess.guests) >= MaxParticipants {
@@ -251,6 +306,7 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 	sess.guests[conn] = name
 	s.broadcastPresenceLocked(sess, Presence{Type: "presence", Event: "join", Name: name})
 	sess.mu.Unlock()
+	s.logf("relay: guest %q joined %s", name, id)
 
 	defer func() {
 		sess.mu.Lock()
@@ -258,6 +314,7 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 		s.broadcastPresenceLocked(sess, Presence{Type: "presence", Event: "leave", Name: name})
 		sess.mu.Unlock()
 		conn.Close(websocket.StatusNormalClosure, "")
+		s.logf("relay: guest %q left %s", name, id)
 	}()
 
 	// Guest -> host only, verbatim. Guests never reach each other directly.
