@@ -1,0 +1,21 @@
+CLAUDE.md
+  s_6f6ec78b82b8ab::t_53cc7dc28a9e8a 1-36
+prd.md
+  s_6f6ec78b82b8ab::t_ee25a382c462f5 1-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "9af9c690a8b320dc6922784d5f7cd37b3059e53c",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
