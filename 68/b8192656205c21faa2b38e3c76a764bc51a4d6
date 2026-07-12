@@ -1,0 +1,26 @@
+docs/compat.md
+  s_6f6ec78b82b8ab::t_fc57cb14d98a4b 19-21,43-45,50-54,56-59
+internal/mirror/mirror_test.go
+  s_6f6ec78b82b8ab::t_6dc97cccd0c577 31-32,35,59,64,106
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_f6f720af50efcd 302-313
+  s_6f6ec78b82b8ab::t_81299cb7e81598 360-377
+internal/mirror/mirror.go
+  s_6f6ec78b82b8ab::t_b0ddf5ad64d428 120-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "68b8192656205c21faa2b38e3c76a764bc51a4d6",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
