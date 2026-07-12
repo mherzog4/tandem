@@ -1,0 +1,30 @@
+web/index.html
+  s_6f6ec78b82b8ab::t_9ed04b6a58bd53 250
+web/app.js
+  s_6f6ec78b82b8ab::t_7685e3946c1ff7 369
+  s_6f6ec78b82b8ab::t_b75dc364c8efa3 11,15-17
+web/embed.go
+  s_6f6ec78b82b8ab::t_aa699aa66d51b4 7
+.github/workflows/ci.yml
+  s_6f6ec78b82b8ab::t_9fa6575d73e06c 54-63
+web/lib.js
+  s_6f6ec78b82b8ab::t_1328319a1c216d 1-74
+web/lib.test.mjs
+  s_6f6ec78b82b8ab::t_a56eecad35c0c2 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "b8584db51b4df299c1687993b624ffa13259b6a8",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
