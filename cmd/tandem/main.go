@@ -33,13 +33,19 @@ import (
 // version is overridden at release time via -ldflags "-X main.version=...".
 var version = "0.0.1-dev"
 
+// defaultRelay is the hosted relay tandem shares through when neither
+// --relay nor TANDEM_RELAY is set. Overridable at build time via
+// -ldflags "-X main.defaultRelay=wss://your-relay".
+var defaultRelay = "wss://tandem-relay-production.up.railway.app"
+
 // main is a thin wrapper so run's defers (recap write, link close,
 // extractor stop, redaction summary) actually execute — os.Exit skips
 // deferred calls, so the exit code must return up to here.
 func main() { os.Exit(run()) }
 
 func run() int {
-	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); empty runs unshared")
+	relayURL := flag.String("relay", "", "relay base URL (ws:// or wss://); overrides TANDEM_RELAY and the built-in default")
+	noShare := flag.Bool("no-share", false, "run the agent locally with no relay/session (unshared)")
 	mirrorLive := flag.Bool("mirror", false, "live-mirror the Composer into the agent's input line (Claude Code; opt-in, see docs)")
 	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
 	allow := flag.String("allow", "", "comma-separated guest emails allowed to join (FR22; claimed, not verified)")
@@ -52,18 +58,34 @@ func run() int {
 	}
 	argv := flag.Args()
 	if len(argv) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: tandem [--relay ws://host:port] <command> [args...]")
+		fmt.Fprintln(os.Stderr, "usage: tandem [--relay wss://host] [--no-share] <command> [args...]")
 		return 2
+	}
+
+	// Relay resolution: --relay flag → TANDEM_RELAY env → built-in
+	// default. --no-share opts out of sharing entirely.
+	relay := *relayURL
+	if relay == "" {
+		relay = os.Getenv("TANDEM_RELAY")
+	}
+	if relay == "" {
+		relay = defaultRelay
+	}
+	if *noShare {
+		relay = ""
 	}
 
 	agentKind := adapter.Detect(argv)
 	opts := ptywrap.Options{}
-	if *relayURL != "" {
+	if relay != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		link, err := hostlink.Connect(ctx, *relayURL)
+		link, err := hostlink.Connect(ctx, relay)
 		cancel()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "tandem:", err)
+			fmt.Fprintf(os.Stderr, "tandem: could not reach the relay at %s\n", relay)
+			fmt.Fprintf(os.Stderr, "        (%v)\n", err)
+			fmt.Fprintln(os.Stderr, "        Set a different one with --relay wss://… or TANDEM_RELAY,")
+			fmt.Fprintln(os.Stderr, "        or run unshared with --no-share.")
 			return 1
 		}
 		defer link.Close()

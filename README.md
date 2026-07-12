@@ -17,16 +17,16 @@ need nothing but a browser.
 ## Use
 
 ```sh
-# on a machine running the relay (or use a hosted one):
-tandem-relay --addr :8080 --base-url https://your-relay.example
-
-# host a session:
-tandem --relay wss://your-relay.example claude
+tandem claude          # or codex, aider, gemini, or any command
 ```
 
-Tandem prints a join link. Send it to your guest; the link's `#` fragment
-holds the encryption key and never reaches the relay — the relay forwards
-ciphertext only. `Ctrl-\` toggles the privacy shutter.
+That's it — `tandem` connects to the hosted relay by default and prints a
+join link. Send it to your guest; the link's `#` fragment holds the
+encryption key and never reaches the relay — the relay forwards ciphertext
+only. `Ctrl-\` toggles the privacy shutter, `Ctrl-]` submits the Composer.
+
+Point at a different relay with `--relay wss://your-relay.example` or the
+`TANDEM_RELAY` env var; run locally with no session via `--no-share`.
 
 ## Deploy your own relay (Railway)
 
