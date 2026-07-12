@@ -1,0 +1,41 @@
+web/index.html
+  s_6f6ec78b82b8ab::t_f5c6438106cad7 175-180
+  s_6f6ec78b82b8ab::t_a6f0720350e1fb 32-37
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_925f525008de64 96-108,195
+  s_6f6ec78b82b8ab::t_856b75620a8e97 25
+  s_6f6ec78b82b8ab::t_8173d31e152fec 33-38
+  s_6f6ec78b82b8ab::t_533ab72e502e08 189,193-194
+  s_6f6ec78b82b8ab::t_9b5bcd71ab1f98 226,228
+  s_6f6ec78b82b8ab::t_1d54525105d218 48,53
+  s_6f6ec78b82b8ab::t_57629158b53f4f 86
+internal/ptywrap/ptywrap.go
+  s_6f6ec78b82b8ab::t_a567315f23d50e 69-71,75,77-80
+  s_6f6ec78b82b8ab::t_0e369bcc867da9 72-74,76
+web/app.js
+  s_6f6ec78b82b8ab::t_776a5c8bcf8617 582-589
+internal/recap/recap_test.go
+  s_6f6ec78b82b8ab::t_51789144787397 1-50,52-56,60-66,68,70-105
+  s_6f6ec78b82b8ab::t_6a20e2752752fe 51,57-59,67,69
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_285040f46556ee 350-351,353,357-368,370-371
+  s_6f6ec78b82b8ab::t_139b47a212aca6 354-356,369
+internal/recap/recap.go
+  s_6f6ec78b82b8ab::t_160b4014f10c77 1-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "30108feb857110496c4785c901a5e6c677b9ed1d",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
