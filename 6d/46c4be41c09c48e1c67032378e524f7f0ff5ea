@@ -1,0 +1,38 @@
+tandem-recap-2026-07-12-1544.md
+  s_6f6ec78b82b8ab::t_ad38b28c7800b1 1-18
+fly.toml
+  s_6f6ec78b82b8ab::t_9c1028083eeff2 1-36
+Dockerfile
+  s_6f6ec78b82b8ab::t_8f7f244a57ad84 1-14
+README.md
+  s_6f6ec78b82b8ab::t_d1a9f981b90a45 31-57
+cmd/relay/main.go
+  s_6f6ec78b82b8ab::t_c4d7c1b09cfa3f 19-22,29,32-37
+  s_bacb58a970418f::t_9a81695e00c7a2 38
+.dockerignore
+  s_6f6ec78b82b8ab::t_557e8fe4dc6a1b 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "6d46c4be41c09c48e1c67032378e524f7f0ff5ea",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    },
+    "s_bacb58a970418f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0a8630fedffea9N5Nrc0hAjn90",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
