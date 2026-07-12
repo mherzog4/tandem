@@ -1,0 +1,26 @@
+internal/redact/redact.go
+  s_6f6ec78b82b8ab::t_a10d00c7a5dcc1 1-14,16-74,76-163
+  s_6f6ec78b82b8ab::t_c0d075a5e3bc93 15,75
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_5b8b3027236e05 19
+  s_6f6ec78b82b8ab::t_3724639282d59d 29
+  s_6f6ec78b82b8ab::t_e7dc234934c41b 57-71
+internal/redact/redact_test.go
+  s_6f6ec78b82b8ab::t_c0d075a5e3bc93 1-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "25061742e9473717fd9df5bfdea4a66c1f2f1624",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
