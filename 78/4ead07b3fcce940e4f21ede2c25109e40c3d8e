@@ -1,0 +1,24 @@
+web/index.html
+  s_6f6ec78b82b8ab::t_65349aa5b32178 45-46
+  s_6f6ec78b82b8ab::t_98cfad581c8076 72-76
+web/app.js
+  s_6f6ec78b82b8ab::t_cd931762189fbe 290-345
+docs/compat.md
+  s_6f6ec78b82b8ab::t_d09934791270d1 28-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "784ead07b3fcce940e4f21ede2c25109e40c3d8e",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
