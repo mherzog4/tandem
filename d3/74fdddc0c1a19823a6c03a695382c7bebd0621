@@ -1,0 +1,26 @@
+scripts/update-formula.sh
+  s_6f6ec78b82b8ab::t_70239cb8ef3792 1-66
+HomebrewFormula/tandem.rb
+  s_6f6ec78b82b8ab::t_21c5dff64e11f6 1-37
+scripts/release.sh
+  s_6f6ec78b82b8ab::t_1beaf7b372e11e 43-59
+README.md
+  s_6f6ec78b82b8ab::t_27f69c3efda24d 96-102,106-107
+  s_6f6ec78b82b8ab::t_2edf5c86ceea7f 108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "d374fdddc0c1a19823a6c03a695382c7bebd0621",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
