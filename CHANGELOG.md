@@ -6,6 +6,14 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-07-12
+
+### Fixed
+- Mirror preview and Ctrl-] run now use raw keystrokes instead of bracketed
+  paste, so the guest's text and the run render cleanly on every agent
+  (plain shells no longer show `…~` marker cruft). `--no-mirror` still uses
+  bracketed-paste submit for multi-line prompts.
+
 ## [0.2.0] — 2026-07-12
 
 ### Changed
@@ -55,7 +63,8 @@ First public release.
   config host connect (`tandem claude`); public-endpoint hardening (session
   cap, per-IP rate limit, dead-peer reaping); local `scripts/release.sh`.
 
-[Unreleased]: https://github.com/mherzog4/tandem/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/mherzog4/tandem/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/mherzog4/tandem/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mherzog4/tandem/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mherzog4/tandem/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mherzog4/tandem/compare/v0.1.0...v0.1.1
