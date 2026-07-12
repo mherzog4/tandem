@@ -1,0 +1,52 @@
+web/embed.go
+  s_6f6ec78b82b8ab::t_16674b56618f9d 1-8
+internal/hostlink/hostlink_test.go
+  s_6f6ec78b82b8ab::t_bf3c1c8b77c776 68
+.playwright-cli/page-2026-07-12T17-45-25-424Z.yml
+  s_6f6ec78b82b8ab::t_532abdcc4f46e5 1-12
+web/app.js
+  s_6f6ec78b82b8ab::t_810588073e7e49 1-131
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_7e1d3dd5233238 36,48-50,53
+web/index.html
+  s_6f6ec78b82b8ab::t_480b11ed75ba18 1-41
+.playwright-cli/page-2026-07-12T17-45-24-814Z.yml
+  s_6f6ec78b82b8ab::t_532abdcc4f46e5 1-4
+internal/ptywrap/ptywrap.go
+  s_6f6ec78b82b8ab::t_6c40eed09dada7 23-27
+  s_6f6ec78b82b8ab::t_912404caecbf1b 42-46
+internal/hostlink/hostlink.go
+  s_6f6ec78b82b8ab::t_a5e2163bbe7352 88-96,98,104-120
+  s_6f6ec78b82b8ab::t_aa55744f2c0aa2 121
+internal/relay/relay.go
+  s_6f6ec78b82b8ab::t_9b72c5b1b8d578 23
+  s_6f6ec78b82b8ab::t_33511c0268bb10 62-67
+.playwright-cli/console-2026-07-12T17-44-41-301Z.log
+  s_6f6ec78b82b8ab::t_1ddf61ec23be75 1
+internal/ptywrap/ptywrap_test.go
+  s_6f6ec78b82b8ab::t_62a0aa1ed1ecb8 11,24
+.playwright-cli/page-2026-07-12T17-44-41-411Z.yml
+  s_6f6ec78b82b8ab::t_1ddf61ec23be75 1-4
+.playwright-cli/page-2026-07-12T17-44-42-076Z.yml
+  s_6f6ec78b82b8ab::t_1ddf61ec23be75 1-9
+web/vendor/xterm.min.css
+  s_6f6ec78b82b8ab::t_121bfd148fed89 1-8
+web/vendor/xterm.min.js
+  s_6f6ec78b82b8ab::t_b3b91d3356449d 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "7f16ee30cb2541603ee3d7e4d84eac29cfe3b53d",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
