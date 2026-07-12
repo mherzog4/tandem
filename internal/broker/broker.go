@@ -97,3 +97,18 @@ func (b *Broker) handle(frame []byte) {
 func (b *Broker) sendSnapshot() {
 	_ = b.link.WriteControl(map[string]any{"type": "composer-snapshot", "snapshot": b.Doc.Snapshot()})
 }
+
+// Flush returns the buffer for submission, records per-author stats,
+// clears the document, and tells every client it was sent. Only the
+// host daemon calls this — there is no guest message that reaches it.
+func (b *Broker) Flush() (text string, stats map[string]int) {
+	text = b.Doc.Text()
+	if text == "" {
+		return "", nil
+	}
+	stats = b.Doc.AuthorStats()
+	cleared := b.Doc.Reset("host")
+	_ = b.link.WriteControl(map[string]any{"type": "composer-op", "op": cleared})
+	_ = b.link.WriteControl(map[string]any{"type": "submitted", "stats": stats})
+	return text, stats
+}

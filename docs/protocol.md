@@ -52,9 +52,19 @@ submit path. Guest-originated `FramePTY` frames are explicitly dropped
 by the broker.
 
 Host → guest control messages: `resize`, `shutter`, `pong`,
-`composer-op`, `composer-snapshot`, `cursor`, plus relay-originated
-plaintext presence events (`{type:"presence", event:"join"|"leave",
-name}`) on text frames.
+`composer-op`, `composer-snapshot`, `cursor`, `submitted` (per-author
+stats after a flush), plus relay-originated plaintext presence events
+(`{type:"presence", event:"join"|"leave", name}`) on text frames.
+
+## The submit path (FR8/FR21)
+
+`Ctrl-]` on the host terminal flushes the Composer: the daemon signs
+the buffer with a per-session in-memory Ed25519 key
+(`internal/signer`), and `ptywrap.Injector` verifies signature and a
+strictly increasing sequence number before writing to the PTY (as a
+bracketed paste + carriage return). Forged, tampered, or replayed
+submissions are logged and dropped. Guests have no message type that
+reaches this path; the signing key never leaves the host process.
 
 ## Adversarial coverage
 
