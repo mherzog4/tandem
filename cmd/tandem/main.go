@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -22,6 +23,7 @@ import (
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
+	"github.com/mherzog4/tandem/internal/record"
 	"github.com/mherzog4/tandem/internal/recap"
 	"github.com/mherzog4/tandem/internal/redact"
 	"github.com/mherzog4/tandem/internal/signer"
@@ -60,7 +62,7 @@ func run() int {
 		cancel()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "tandem:", err)
-			os.Exit(1)
+			return 1
 		}
 		defer link.Close()
 		b := broker.New(link)
@@ -72,9 +74,19 @@ func run() int {
 			link.SetAllowlist(strings.Split(*allow, ","))
 			fmt.Fprintln(os.Stderr, "tandem: guest allowlist active (emails are claimed, not verified)")
 		}
+		var rc *record.Recorder
 		if *recordIntent {
 			link.SetRecording(true)
-			fmt.Fprintln(os.Stderr, "tandem: session declared as recorded; guests must acknowledge")
+			// Cast file sits beside the recap. Records the REDACTED
+			// stream, so masked secrets stay masked in replay (FR19).
+			castName := "tandem-cast-" + time.Now().Format("2006-01-02-1504") + ".cast"
+			if f, err := os.Create(castName); err == nil {
+				rc, _ = record.New(f, 120, 40)
+				defer f.Close()
+				fmt.Fprintf(os.Stderr, "tandem: recording to %s (guests must acknowledge)\n", castName)
+			} else {
+				fmt.Fprintf(os.Stderr, "tandem: could not open cast file: %v\n", err)
+			}
 		}
 
 		// Serialize confirmed cards into the wrapped repo (FR14). The
@@ -129,6 +141,27 @@ func run() int {
 		// unless ANTHROPIC_API_KEY is set.
 		ext := extract.New(b.Board.Cards, b.ProposeCards)
 		guestStream := io.Writer(link)
+		// The recorder tees the redacted stream (added below, after
+		// redaction) so the cast matches what guests saw. Board and
+		// composer events are recorded via the broker hooks.
+		if rc != nil {
+			prevBoard := b.OnBoardChange
+			b.OnBoardChange = func(cards []board.Card) {
+				if prevBoard != nil {
+					prevBoard(cards)
+				}
+				if j, err := json.Marshal(cards); err == nil {
+					rc.Board(string(j))
+				}
+			}
+			prevCompose := b.OnChange
+			b.OnChange = func(text string) {
+				if prevCompose != nil {
+					prevCompose(text)
+				}
+				rc.Composer(text)
+			}
+		}
 		if ext != nil {
 			// Vocabulary drift flags (FR17) ride the same LLM pass.
 			ext.OnDrift = func(conflicts []extract.Conflict) {
@@ -138,6 +171,12 @@ func run() int {
 			defer ext.Close()
 			guestStream = io.MultiWriter(link, ext)
 			fmt.Fprintln(os.Stderr, "tandem: domain extractor active (proposals + drift flags)")
+		}
+		// Recorder tees the (about-to-be-redacted) guest output so the
+		// cast contains exactly what guests saw — masked secrets stay
+		// masked in replay.
+		if rc != nil {
+			guestStream = io.MultiWriter(guestStream, rc)
 		}
 
 		opts.Tap = guestStream

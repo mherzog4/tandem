@@ -73,6 +73,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// Guest client page. The session key rides the URL fragment,
 		// which the browser never sends here.
 		http.ServeFileFS(w, r, web.Assets, "index.html")
+	case r.URL.Path == "/player":
+		// Local replay tool: loads a .cast file the host opens; no
+		// session state involved.
+		http.ServeFileFS(w, r, web.Assets, "player.html")
 	case strings.HasPrefix(r.URL.Path, "/static/"):
 		http.StripPrefix("/static/", http.FileServerFS(web.Assets)).ServeHTTP(w, r)
 	case r.URL.Path == "/healthz":
