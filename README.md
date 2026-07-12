@@ -1,9 +1,44 @@
-# tandem
+# Tandem
 
-A shared seat inside the engineer's coding agent session. Share a live
-terminal session (Claude Code, Codex CLI, Gemini CLI, Aider, or any
-command) with a stakeholder: they see everything, can compose into the
-prompt — and structurally cannot execute anything. See [prd.md](prd.md).
+[![CI](https://github.com/mherzog4/tandem/actions/workflows/ci.yml/badge.svg)](https://github.com/mherzog4/tandem/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/mherzog4/tandem?sort=semver)](https://github.com/mherzog4/tandem/releases)
+[![Go](https://img.shields.io/github/go-mod/go-version/mherzog4/tandem)](go.mod)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**A shared seat inside the engineer's coding-agent session.** Share a live
+terminal session (Claude Code, Codex, Gemini, Aider, Factory, or any command)
+with a nontechnical stakeholder: they see everything and can compose directly
+into the prompt sent to the agent — and **structurally cannot execute
+anything.** Only the engineer submits, approves tool calls, or touches the
+shell.
+
+Think of it as Tuple, but the object you're pairing on isn't a code editor —
+it's the conversation with the agent itself.
+
+## Why
+
+The workflow today is a game of telephone: stakeholder describes what they
+want → engineer translates it into a prompt → agent builds → everyone
+discovers the misunderstanding days later. Tandem collapses that to a shared
+conversation with the agent. Natural language is the one medium where the
+stakeholder isn't the junior partner, so they write into the prompt in their
+own words; the engineer stays the editor, safety gate, and technical
+enricher. A live **Domain Board** (EventStorming-style) captures the shared
+vocabulary into `DOMAIN.md` in the repo, which feeds the agent as context.
+
+Full product rationale: [prd.md](prd.md).
+
+## How it works
+
+- **Host CLI** (`tandem`) wraps the agent in a PTY and owns the only handle to
+  its stdin.
+- **Relay** forwards end-to-end-encrypted frames between host and guests; it
+  only ever sees ciphertext (the session key lives in the join link's `#`
+  fragment, which browsers never send to the server).
+- **Guest** joins in a browser — no install. Guest keystrokes and dictation go
+  to a shared, host-authoritative **Composer** buffer, never to the PTY. Only
+  the host can flush it, and only through an Ed25519 signing chokepoint. That's
+  a structural guarantee, not a filtered UI. See [docs/protocol.md](docs/protocol.md).
 
 ## Install (host)
 
@@ -83,3 +118,21 @@ scripts/release.sh v0.1.0
 
 which cross-compiles all four targets on your machine and publishes the
 GitHub Release directly (uses zero Actions minutes).
+
+## Documentation
+
+- [docs/protocol.md](docs/protocol.md) — wire protocol and the gated-input guarantee
+- [docs/compat.md](docs/compat.md) — agent compatibility matrix + `--mirror`, dictation
+- [docs/latency.md](docs/latency.md) — latency targets and how they're measured
+- [prd.md](prd.md) — product requirements
+
+## Contributing
+
+Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Please keep the
+[security invariant](docs/protocol.md) intact and run `go test -race ./...`.
+Be kind ([Code of Conduct](CODE_OF_CONDUCT.md)). Found a vulnerability?
+[SECURITY.md](SECURITY.md) — report it privately, not as an issue.
+
+## License
+
+[MIT](LICENSE) © Matt Herzog
