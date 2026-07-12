@@ -8,7 +8,6 @@
 package ptywrap
 
 import (
-	"bytes"
 	"io"
 	"os"
 	"os/exec"
@@ -27,11 +26,14 @@ type Options struct {
 	// window-size change, so the share layer can keep guest renderers
 	// in sync.
 	OnResize func(cols, rows uint16)
-	// InterceptKey is a single byte the host daemon claims for itself
-	// (e.g. 0x1C, Ctrl-\, for the privacy shutter). When seen on stdin
-	// it is NOT forwarded to the child; OnIntercept fires instead.
-	InterceptKey byte
-	OnIntercept  func()
+	// Intercepts maps stdin bytes the host daemon claims for itself
+	// (e.g. 0x1C, Ctrl-\, for the privacy shutter). Intercepted bytes
+	// are NOT forwarded to the child; the handler fires instead.
+	Intercepts map[byte]func()
+	// Injector, if set, is the only path by which network-derived text
+	// (the Composer buffer) may reach the child's stdin. Every
+	// submission is signature-verified first (FR21).
+	Injector *Injector
 }
 
 // Run executes argv inside a PTY, wiring the current process's terminal
@@ -71,14 +73,20 @@ func Run(argv []string, opts Options) (int, error) {
 		defer term.Restore(int(os.Stdin.Fd()), oldState)
 	}
 
-	// Host stdin -> PTY. Sole writer to the child's input.
+	// Host stdin -> PTY: the host's own keystrokes, forwarded directly.
 	go func() {
-		if opts.InterceptKey != 0 && opts.OnIntercept != nil {
-			_ = copyIntercept(ptmx, os.Stdin, opts.InterceptKey, opts.OnIntercept)
+		if len(opts.Intercepts) > 0 {
+			_ = copyIntercept(ptmx, os.Stdin, opts.Intercepts)
 		} else {
 			_, _ = io.Copy(ptmx, os.Stdin)
 		}
 	}()
+
+	// Signed-submission path: the only other writer to the child's
+	// stdin, gated by signature verification.
+	if opts.Injector != nil {
+		go opts.Injector.serve(ptmx)
+	}
 
 	// PTY -> host stdout, tee'd to the tap.
 	out := io.Writer(os.Stdout)
@@ -98,17 +106,17 @@ func Run(argv []string, opts Options) (int, error) {
 }
 
 // copyIntercept forwards src to dst byte-stream style, swallowing every
-// occurrence of key and firing onKey instead. The child never sees the
-// intercepted byte, so the hotkey works regardless of what the wrapped
-// TUI binds.
-func copyIntercept(dst io.Writer, src io.Reader, key byte, onKey func()) error {
+// occurrence of an intercepted key and firing its handler instead. The
+// child never sees intercepted bytes, so the hotkeys work regardless of
+// what the wrapped TUI binds.
+func copyIntercept(dst io.Writer, src io.Reader, keys map[byte]func()) error {
 	buf := make([]byte, 4096)
 	for {
 		n, err := src.Read(buf)
 		if n > 0 {
 			chunk := buf[:n]
 			for {
-				i := bytes.IndexByte(chunk, key)
+				i := bytesIndexFunc(chunk, keys)
 				if i < 0 {
 					break
 				}
@@ -117,7 +125,7 @@ func copyIntercept(dst io.Writer, src io.Reader, key byte, onKey func()) error {
 						return werr
 					}
 				}
-				onKey()
+				keys[chunk[i]]()
 				chunk = chunk[i+1:]
 			}
 			if len(chunk) > 0 {
@@ -130,4 +138,14 @@ func copyIntercept(dst io.Writer, src io.Reader, key byte, onKey func()) error {
 			return err
 		}
 	}
+}
+
+// bytesIndexFunc returns the first index whose byte has a handler.
+func bytesIndexFunc(b []byte, keys map[byte]func()) int {
+	for i, c := range b {
+		if _, ok := keys[c]; ok {
+			return i
+		}
+	}
+	return -1
 }

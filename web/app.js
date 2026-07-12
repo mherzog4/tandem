@@ -321,6 +321,8 @@
         shadow = comp.chars.join("");
         cinput.value = shadow;
         renderMirror();
+      } else if (ctrl.type === "submitted") {
+        statusEl.textContent = "prompt sent ✓";
       } else if (ctrl.type === "cursor" && ctrl.author) {
         comp.cursors[ctrl.author] = ctrl.pos;
         renderMirror();

@@ -13,6 +13,7 @@ import (
 	"github.com/mherzog4/tandem/internal/broker"
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/ptywrap"
+	"github.com/mherzog4/tandem/internal/signer"
 )
 
 // version is overridden at release time via -ldflags "-X main.version=...".
@@ -45,25 +46,44 @@ func main() {
 		b := broker.New(link)
 		go b.Run()
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
-		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ toggles the privacy shutter")
+		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer")
 		opts.Tap = link
 		opts.OnResize = func(cols, rows uint16) {
 			_ = link.WriteControl(map[string]any{"type": "resize", "cols": cols, "rows": rows})
 		}
-		// Privacy shutter (FR4) on Ctrl-\. The byte is swallowed before
-		// the child, so the wrapped TUI never sees it (and loses its
-		// SIGQUIT binding — documented trade-off).
+		// Host-only submit path (FR8/FR21): Ctrl-] flushes the Composer
+		// through the signing chokepoint into the PTY. Only the host's
+		// terminal can trigger this — guests have no message for it.
+		sign, err := signer.New()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "tandem:", err)
+			os.Exit(1)
+		}
+		injector := ptywrap.NewInjector(signer.NewVerifier(sign.Public()))
+		opts.Injector = injector
+
+		// Privacy shutter (FR4) on Ctrl-\. Intercepted bytes are
+		// swallowed before the child, so the wrapped TUI never sees
+		// them (it loses Ctrl-\/SIGQUIT and Ctrl-] — documented).
 		shuttered := false
-		opts.InterceptKey = 0x1C
-		opts.OnIntercept = func() {
-			shuttered = !shuttered
-			link.SetShuttered(shuttered)
-			if shuttered {
-				// Bell + title: visible without corrupting the TUI.
-				fmt.Fprint(os.Stdout, "\a\033]0;tandem ⏸ SHARING PAUSED\007")
-			} else {
-				fmt.Fprint(os.Stdout, "\a\033]0;tandem ● sharing live\007")
-			}
+		opts.Intercepts = map[byte]func(){
+			0x1C: func() { // Ctrl-\ : shutter
+				shuttered = !shuttered
+				link.SetShuttered(shuttered)
+				if shuttered {
+					// Bell + title: visible without corrupting the TUI.
+					fmt.Fprint(os.Stdout, "\a\033]0;tandem ⏸ SHARING PAUSED\007")
+				} else {
+					fmt.Fprint(os.Stdout, "\a\033]0;tandem ● sharing live\007")
+				}
+			},
+			0x1D: func() { // Ctrl-] : submit the Composer buffer
+				text, _ := b.Flush()
+				if text == "" {
+					return
+				}
+				injector.Submit(sign.Sign(text))
+			},
 		}
 	}
 
