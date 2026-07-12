@@ -160,9 +160,16 @@
 
     // Allowlisted sessions (FR22) reject the upgrade with a 403; the
     // socket errors before opening. Reveal the email field and retry.
-    let opened = false;
+    const waitingEl = document.getElementById("waiting");
+    let opened = false, waiting = false, admitted = false;
     ws.addEventListener("open", () => { opened = true; });
     ws.addEventListener("close", () => {
+      if (waiting && !admitted) {
+        // Declined or timed out in the waiting room.
+        waitingEl.querySelector(".card").innerHTML =
+          "🚪<br>The engineer didn't let you in<br><small>ask them to re-share the link if this was a mistake</small>";
+        return;
+      }
       if (opened) return;
       appEl.style.display = "none";
       joinEl.style.display = "flex";
@@ -182,6 +189,10 @@
             bumpRoster(msg.name, msg.event === "join" ? 1 : -1);
           } else if (msg.type === "roster" && Array.isArray(msg.names)) {
             setRoster(msg.names);
+          } else if (msg.type === "waiting") {
+            waiting = true;
+            waitingEl.style.display = "flex";
+            statusEl.textContent = "waiting to be admitted";
           }
         } catch { /* ignore malformed relay text */ }
         return;
@@ -192,6 +203,13 @@
           plain = await openFrame(key, ev.data);
         } catch {
           return; // tampered/foreign frame: drop silently
+        }
+        if (waiting && !admitted) {
+          // First host frame means we were admitted; drop the overlay.
+          admitted = true;
+          waiting = false;
+          waitingEl.style.display = "none";
+          statusEl.textContent = "live";
         }
         const kind = plain[0];
         const body = plain.slice(1);

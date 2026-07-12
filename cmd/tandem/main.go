@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"sync/atomic"
@@ -52,6 +53,7 @@ func run() int {
 	noMirror := flag.Bool("no-mirror", false, "don't mirror the Composer into the agent's input line (guests then compose in the panel; Ctrl-] pastes it)")
 	noRedact := flag.Bool("no-redact", false, "disable secret masking in the guest stream (FR23; host always sees originals)")
 	allow := flag.String("allow", "", "comma-separated guest emails allowed to join (FR22; claimed, not verified)")
+	approve := flag.Bool("approve", false, "hold each guest in a waiting room until you admit them with Ctrl-G (link-leak defense)")
 	recordIntent := flag.Bool("record", false, "declare the session recorded; guests must acknowledge before viewing (FR24)")
 	showVersion := flag.Bool("version", false, "print version")
 	flag.Parse()
@@ -100,6 +102,26 @@ func run() int {
 		if *allow != "" {
 			link.SetAllowlist(strings.Split(*allow, ","))
 			fmt.Fprintln(os.Stderr, "tandem: guest allowlist active (emails are claimed, not verified)")
+		}
+
+		// Waiting room (--approve): guests queue until the host admits the
+		// next one with Ctrl-G. The queue is FIFO; a hostile link-holder
+		// never reaches the terminal without an explicit admit.
+		var pendMu sync.Mutex
+		var pendCIDs []string
+		pendName := map[string]string{}
+		if *approve {
+			link.SetApproval(true)
+			fmt.Fprintln(os.Stderr, "tandem: approval mode on — guests wait until you admit them (Ctrl-G admits the next)")
+			link.OnJoinRequest = func(name, cid string) {
+				pendMu.Lock()
+				pendCIDs = append(pendCIDs, cid)
+				pendName[cid] = name
+				n := len(pendCIDs)
+				pendMu.Unlock()
+				fmt.Fprintf(os.Stderr, "\r\ntandem: 🔔 %q wants to join (%d waiting) — Ctrl-G to admit\r\n", name, n)
+				fmt.Fprint(os.Stdout, "\a")
+			}
 		}
 		var rc *record.Recorder
 		if *recordIntent {
@@ -314,6 +336,26 @@ func run() int {
 				}
 				fmt.Fprint(os.Stdout, "\a") // host cue: it ran
 			},
+		}
+
+		// Ctrl-G admits the next waiting guest (only bound in --approve
+		// mode so it stays a normal keystroke otherwise).
+		if *approve {
+			opts.Intercepts[0x07] = func() {
+				pendMu.Lock()
+				if len(pendCIDs) == 0 {
+					pendMu.Unlock()
+					return
+				}
+				cid := pendCIDs[0]
+				pendCIDs = pendCIDs[1:]
+				name := pendName[cid]
+				delete(pendName, cid)
+				remaining := len(pendCIDs)
+				pendMu.Unlock()
+				link.Admit(cid)
+				fmt.Fprintf(os.Stderr, "\r\ntandem: admitted %q (%d still waiting)\r\n", name, remaining)
+			}
 		}
 
 		// Auto-copy the guest link to the host's clipboard (OSC 52) so

@@ -25,6 +25,11 @@
   #shutter .card { font-size: 22px; line-height: 1.6; background: #161b22; border: 1px solid #30363d;
                    border-radius: 12px; padding: 32px 48px; }
   #shutter small { color: #8b949e; }
+  #waiting { display: none; position: fixed; inset: 0; background: #0d1117f8; z-index: 25;
+             align-items: center; justify-content: center; text-align: center; }
+  #waiting .card { font-size: 22px; line-height: 1.6; background: #161b22; border: 1px solid #30363d;
+                   border-radius: 12px; padding: 32px 48px; max-width: 460px; }
+  #waiting small { color: #8b949e; font-size: 14px; }
   #consent { display: none; position: fixed; inset: 0; background: #0d1117f8; z-index: 20;
              align-items: center; justify-content: center; text-align: center; }
   #consent .card { font-size: 20px; line-height: 1.6; background: #161b22; border: 1px solid #f85149;
@@ -220,6 +225,10 @@
   </div>
   <div id="shutter">
     <div class="card">⏸<br>Host paused sharing<br><small>the view resumes when they unpause</small></div>
+  </div>
+  <div id="waiting">
+    <div class="card">⏳<br>Waiting for the engineer to let you in<br>
+      <small>this session admits guests one at a time; you'll join as soon as they approve</small></div>
   </div>
   <div id="recap">
     <div class="sheet">

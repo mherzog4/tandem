@@ -51,6 +51,18 @@ type session struct {
 	// allowedEmails, when non-empty, restricts who may join (FR22).
 	// Claimed, not verified — see docs/protocol.md.
 	allowedEmails map[string]bool
+	// approval, when set by the host, holds each new guest in a waiting
+	// room until the host admits it (link-leak defense). pending tracks
+	// guests awaiting a decision, keyed by a random connection id.
+	approval bool
+	pending  map[string]*pendingGuest
+}
+
+// pendingGuest is a guest parked in the waiting room; admit carries the
+// host's decision (true = let in, false = decline).
+type pendingGuest struct {
+	name  string
+	admit chan bool
 }
 
 // Server is an http.Handler serving the relay protocol.
@@ -187,7 +199,7 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 
 	if sess == nil {
 		id = newSessionID()
-		sess = &session{host: conn, guests: make(map[*websocket.Conn]string), resumeToken: newSessionID()}
+		sess = &session{host: conn, guests: make(map[*websocket.Conn]string), pending: make(map[string]*pendingGuest), resumeToken: newSessionID()}
 		s.mu.Lock()
 		s.sessions[id] = sess
 		s.mu.Unlock()
@@ -246,16 +258,38 @@ func (s *Server) serveHost(w http.ResponseWriter, r *http.Request) {
 			var msg struct {
 				Type   string   `json:"type"`
 				Emails []string `json:"emails"`
+				On     bool     `json:"on"`
+				CID    string   `json:"cid"`
 			}
-			if json.Unmarshal(data, &msg) == nil && msg.Type == "allowlist" {
-				allowed := make(map[string]bool, len(msg.Emails))
-				for _, e := range msg.Emails {
-					allowed[strings.ToLower(strings.TrimSpace(e))] = true
+			if json.Unmarshal(data, &msg) == nil {
+				switch msg.Type {
+				case "allowlist":
+					allowed := make(map[string]bool, len(msg.Emails))
+					for _, e := range msg.Emails {
+						allowed[strings.ToLower(strings.TrimSpace(e))] = true
+					}
+					sess.mu.Lock()
+					sess.allowedEmails = allowed
+					sess.mu.Unlock()
+					continue
+				case "approval":
+					sess.mu.Lock()
+					sess.approval = msg.On
+					sess.mu.Unlock()
+					continue
+				case "admit", "deny":
+					sess.mu.Lock()
+					pg := sess.pending[msg.CID]
+					sess.mu.Unlock()
+					if pg != nil {
+						// Buffered channel; never blocks the host read loop.
+						select {
+						case pg.admit <- msg.Type == "admit":
+						default:
+						}
+					}
+					continue
 				}
-				sess.mu.Lock()
-				sess.allowedEmails = allowed
-				sess.mu.Unlock()
-				continue
 			}
 		}
 		sess.mu.Lock()
@@ -296,6 +330,19 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 		return
 	}
 	go keepalive(conn) // reap a dead guest conn
+
+	// Waiting room (FR): when the host has enabled approval, hold this
+	// guest until the host admits it. Until then it is not in sess.guests,
+	// so no host frame ever reaches it.
+	sess.mu.Lock()
+	approval := sess.approval
+	host := sess.host
+	sess.mu.Unlock()
+	if approval {
+		if !s.awaitAdmission(r.Context(), sess, conn, name, host) {
+			return // declined, timed out, or disconnected while waiting
+		}
+	}
 
 	sess.mu.Lock()
 	if 1+len(sess.guests) >= MaxParticipants {
@@ -339,6 +386,50 @@ func (s *Server) serveGuest(w http.ResponseWriter, r *http.Request, id string) {
 		if host != nil {
 			_ = writeTimeout(host, typ, data)
 		}
+	}
+}
+
+// approvalTimeout bounds how long a guest waits in the waiting room
+// before the relay gives up and closes the connection.
+const approvalTimeout = 2 * time.Minute
+
+// awaitAdmission parks the guest until the host admits it, declines it,
+// the wait times out, or the guest disconnects. It returns true only when
+// the host explicitly admitted the guest. The guest is never in
+// sess.guests while pending, so it receives no host frames.
+func (s *Server) awaitAdmission(ctx context.Context, sess *session, conn *websocket.Conn, name string, host *websocket.Conn) bool {
+	cid := newSessionID()
+	pg := &pendingGuest{name: name, admit: make(chan bool, 1)}
+	sess.mu.Lock()
+	sess.pending[cid] = pg
+	sess.mu.Unlock()
+	defer func() {
+		sess.mu.Lock()
+		delete(sess.pending, cid)
+		sess.mu.Unlock()
+	}()
+
+	// Ask the host, and tell the guest it is waiting.
+	if host != nil {
+		if jr, err := json.Marshal(map[string]string{"type": "join-request", "name": name, "cid": cid}); err == nil {
+			_ = writeTimeout(host, websocket.MessageText, jr)
+		}
+	}
+	if wmsg, err := json.Marshal(map[string]string{"type": "waiting"}); err == nil {
+		_ = writeTimeout(conn, websocket.MessageText, wmsg)
+	}
+
+	select {
+	case ok := <-pg.admit:
+		if !ok {
+			conn.Close(websocket.StatusPolicyViolation, "the host declined the request")
+		}
+		return ok
+	case <-time.After(approvalTimeout):
+		conn.Close(websocket.StatusPolicyViolation, "approval timed out")
+		return false
+	case <-ctx.Done():
+		return false
 	}
 }
 

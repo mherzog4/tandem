@@ -61,11 +61,16 @@ type Link struct {
 	// The session broker uses it to push a composer snapshot.
 	OnGuestJoin func(name string)
 
+	// OnJoinRequest, if set, fires when a guest lands in the waiting room
+	// (approval mode). The host CLI surfaces it and calls Admit/Deny.
+	OnJoinRequest func(name, cid string)
+
 	mu          sync.Mutex
 	scrollback  []byte
 	shuttered   bool
 	allowEmails []string
 	recording   bool
+	approval    bool
 }
 
 // Connect dials the relay's /ws/host endpoint, waits for the session
@@ -159,6 +164,7 @@ func (l *Link) run(conn *websocket.Conn) {
 			}
 			conn = c
 			l.sendAllowlist() // relay state is per-connection; restore it
+			l.sendApproval()
 			l.enqueueReplay() // guests may have missed frames
 			break
 		}
@@ -198,8 +204,16 @@ func (l *Link) readLoop(conn *websocket.Conn, done chan struct{}) {
 			return
 		}
 		if typ == websocket.MessageText {
-			var p struct{ Type, Event, Name string }
-			if json.Unmarshal(data, &p) == nil && p.Type == "presence" && p.Event == "join" {
+			var p struct{ Type, Event, Name, CID string }
+			_ = json.Unmarshal(data, &p)
+			if p.Type == "join-request" {
+				// A guest is in the waiting room; hand it to the host CLI.
+				if l.OnJoinRequest != nil {
+					l.OnJoinRequest(p.Name, p.CID)
+				}
+				continue
+			}
+			if p.Type == "presence" && p.Event == "join" {
 				// New or refreshed guest: replay scrollback so they see
 				// history, not a blank screen. Broadcast resets existing
 				// guests too — idempotent since replay starts with reset.
@@ -287,7 +301,36 @@ func (l *Link) sendAllowlist() {
 	if len(emails) == 0 {
 		return
 	}
-	msg, _ := json.Marshal(map[string]any{"type": "allowlist", "emails": emails})
+	l.sendPlain(map[string]any{"type": "allowlist", "emails": emails})
+}
+
+// SetApproval turns the waiting room on or off. Like the allowlist it is a
+// plaintext relay instruction (the relay must read it to enforce it),
+// re-sent on every reconnect.
+func (l *Link) SetApproval(on bool) {
+	l.mu.Lock()
+	l.approval = on
+	l.mu.Unlock()
+	l.sendApproval()
+}
+
+func (l *Link) sendApproval() {
+	l.mu.Lock()
+	on := l.approval
+	l.mu.Unlock()
+	if !on {
+		return
+	}
+	l.sendPlain(map[string]any{"type": "approval", "on": true})
+}
+
+// Admit lets a waiting guest into the session; Deny turns it away. cid is
+// the connection id from the OnJoinRequest callback.
+func (l *Link) Admit(cid string) { l.sendPlain(map[string]any{"type": "admit", "cid": cid}) }
+func (l *Link) Deny(cid string)  { l.sendPlain(map[string]any{"type": "deny", "cid": cid}) }
+
+func (l *Link) sendPlain(v any) {
+	msg, _ := json.Marshal(v)
 	select {
 	case l.plainOut <- msg:
 	default:
