@@ -74,5 +74,12 @@ go test ./...        # tests
 go build ./...       # build all
 ```
 
-Releases: push a `v*` tag; CI builds static binaries for all four
-targets and attaches them to a GitHub release.
+Releases: either push a `v*` tag (CI builds and publishes the binaries),
+or cut one locally with no CI —
+
+```sh
+scripts/release.sh v0.1.0
+```
+
+which cross-compiles all four targets on your machine and publishes the
+GitHub Release directly (uses zero Actions minutes).
