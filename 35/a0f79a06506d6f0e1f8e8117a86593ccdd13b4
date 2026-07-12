@@ -1,0 +1,20 @@
+README.md
+  s_6f6ec78b82b8ab::t_f5d3a87e3d0a68 38-43
+  s_6f6ec78b82b8ab::t_56a75416ec905d 60-62,64-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "35a0f79a06506d6f0e1f8e8117a86593ccdd13b4",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
