@@ -418,6 +418,90 @@
     });
     // ---------------------------------------------------------------
 
+    // ---- Domain Board (FR12 manual cards + FR16 ordering) ---------
+    const boardEl = document.getElementById("board");
+    document.getElementById("boardtoggle").addEventListener("click", () => {
+      boardEl.hidden = !boardEl.hidden;
+    });
+
+    document.getElementById("cardform").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const text = document.getElementById("cardtext").value.trim();
+      if (!text) return;
+      sendCtrl({
+        type: "board-add",
+        cardType: document.getElementById("cardtype").value,
+        text,
+        author: name,
+      });
+      document.getElementById("cardtext").value = "";
+    });
+
+    let dragId = null;
+
+    function renderBoard(cards) {
+      document.querySelectorAll(".lane").forEach((lane) => {
+        const laneType = lane.dataset.type;
+        const holder = lane.querySelector(".cards");
+        holder.innerHTML = "";
+        cards.filter((c) => c.type === laneType).forEach((c, idx) => {
+          const el = document.createElement("div");
+          el.className = `card ${c.state}`;
+          el.dataset.type = c.type;
+          el.dataset.id = c.id;
+          el.dataset.index = idx;
+          el.draggable = laneType === "event";
+
+          const del = document.createElement("span");
+          del.className = "del";
+          del.textContent = "×";
+          del.title = "remove card";
+          del.addEventListener("click", () => sendCtrl({ type: "board-del", id: c.id, author: name }));
+
+          const text = document.createElement("span");
+          text.textContent = c.text;
+          const meta = document.createElement("small");
+          meta.textContent = `${c.author} · ${c.state}${c.codeName ? ` · code: ${c.codeName}` : ""}`;
+
+          el.append(del, text, meta);
+
+          // Double-click edits in place; stakeholder wording wins by
+          // default so anyone can rewrite (FR13's editing half).
+          el.addEventListener("dblclick", () => {
+            const input = document.createElement("input");
+            input.value = c.text;
+            input.style.width = "95%";
+            el.replaceChildren(input);
+            input.focus();
+            const commit = () => {
+              const t = input.value.trim();
+              if (t && t !== c.text) sendCtrl({ type: "board-edit", id: c.id, text: t, author: name });
+              else renderBoard(comp.board || []);
+            };
+            input.addEventListener("blur", commit);
+            input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+          });
+
+          // Drag ordering for events (FR16).
+          if (el.draggable) {
+            el.addEventListener("dragstart", () => { dragId = c.id; });
+            el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("dragover"); });
+            el.addEventListener("dragleave", () => el.classList.remove("dragover"));
+            el.addEventListener("drop", (e) => {
+              e.preventDefault();
+              el.classList.remove("dragover");
+              if (dragId && dragId !== c.id) {
+                sendCtrl({ type: "board-move", id: dragId, toIndex: idx, author: name });
+              }
+              dragId = null;
+            });
+          }
+          holder.appendChild(el);
+        });
+      });
+    }
+    // ---------------------------------------------------------------
+
     function handleComposerCtrl(ctrl) {
       if (ctrl.type === "composer-op" && ctrl.op) {
         applyOp(ctrl.op);
@@ -448,6 +532,10 @@
         showPing(ctrl.author, ctrl.x, ctrl.y);
       } else if (ctrl.type === "react" && ctrl.author !== name) {
         showReaction(ctrl.author, ctrl.emoji);
+      } else if (ctrl.type === "board-state") {
+        comp.board = ctrl.cards || [];
+        renderBoard(comp.board);
+        if (boardEl.hidden && comp.board.length) boardEl.hidden = false;
       } else if (ctrl.type === "cursor" && ctrl.author) {
         comp.cursors[ctrl.author] = ctrl.pos;
         renderMirror();

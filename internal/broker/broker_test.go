@@ -189,3 +189,51 @@ func TestHighlightAndReactRelay(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+func TestBoardLifecycleViaBroker(t *testing.T) {
+	guest, cipher, b := setup(t)
+	readCtrl(t, guest, cipher, "composer-snapshot")
+
+	// The join itself broadcasts an (empty) board snapshot; scan until
+	// the state we caused appears.
+	boardUntil := func(pred func([]any) bool) []any {
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			if time.Now().After(deadline) {
+				t.Fatal("timeout waiting for board state")
+			}
+			st := readCtrl(t, guest, cipher, "board-state")
+			cards, _ := st["cards"].([]any)
+			if cards == nil {
+				cards = []any{}
+			}
+			if pred(cards) {
+				return cards
+			}
+		}
+	}
+
+	send(t, guest, cipher, `{"type":"board-add","cardType":"event","text":"ClaimDenied","author":"m"}`)
+	cards := boardUntil(func(c []any) bool { return len(c) == 1 })
+	id := cards[0].(map[string]any)["id"].(string)
+
+	send(t, guest, cipher, `{"type":"board-edit","id":"`+id+`","text":"ClaimDenied by adjuster","author":"p"}`)
+	boardUntil(func(c []any) bool {
+		return len(c) == 1 && c[0].(map[string]any)["text"] == "ClaimDenied by adjuster"
+	})
+
+	send(t, guest, cipher, `{"type":"board-del","id":"`+id+`","author":"m"}`)
+	boardUntil(func(c []any) bool { return len(c) == 0 })
+
+	// Junk: bad type, empty text.
+	before := b.Dropped.Load()
+	send(t, guest, cipher, `{"type":"board-add","cardType":"stickynote","text":"x","author":"m"}`)
+	send(t, guest, cipher, `{"type":"board-add","cardType":"event","text":"","author":"m"}`)
+	deadline := time.Now().Add(5 * time.Second)
+	for b.Dropped.Load() < before+2 {
+		if time.Now().After(deadline) {
+			t.Fatal("board junk not dropped")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}

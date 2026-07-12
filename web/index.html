@@ -40,6 +40,29 @@
                font-size: 15px; padding: 3px 8px; cursor: pointer; color: #e6edf3; }
   #quotebtn { position: absolute; left: 12px; bottom: 10px; z-index: 6; }
   #quotebtn[hidden] { display: none; }
+  #boardtoggle { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+  #board { position: fixed; left: 0; right: 340px; bottom: 0; height: 230px; background: #10151c;
+           border-top: 1px solid #30363d; z-index: 8; display: flex; flex-direction: column; }
+  #board[hidden] { display: none; }
+  #boardhead { display: flex; gap: 10px; align-items: center; padding: 6px 10px; font-size: 13px; border-bottom: 1px solid #30363d; }
+  #boardhead small { color: #8b949e; }
+  #cardform { margin-left: auto; display: flex; gap: 6px; }
+  #cardform select, #cardform input { background: #161b22; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 3px 6px; font-size: 12px; }
+  #cardform input { width: 200px; }
+  #cardform button { background: #238636; color: white; border: 0; border-radius: 6px; padding: 3px 12px; cursor: pointer; }
+  #lanes { display: flex; flex: 1; overflow: hidden; }
+  .lane { flex: 1; min-width: 0; border-right: 1px solid #21262d; display: flex; flex-direction: column; }
+  .lane h4 { margin: 6px 10px 4px; font-size: 11px; text-transform: uppercase; color: #8b949e; }
+  .lane .cards { flex: 1; overflow-y: auto; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+  #lanes .card { border-radius: 8px; padding: 6px 8px; font-size: 13px; cursor: grab; border: 1px solid transparent; }
+  #lanes .card small { display: block; font-size: 10px; opacity: .75; margin-top: 3px; }
+  #lanes .card .del { float: right; cursor: pointer; opacity: .5; }
+  #lanes .card.proposed { border-style: dashed; opacity: .92; }
+  #lanes .card[data-type="event"] { background: #7a3e00; border-color: #d29922; }
+  #lanes .card[data-type="command"] { background: #123b6b; border-color: #388bfd; }
+  #lanes .card[data-type="actor"] { background: #6b5900; border-color: #d4b106; }
+  #lanes .card[data-type="term"] { background: #472a78; border-color: #8957e5; }
+  #lanes .card.dragover { outline: 2px solid #58a6ff; }
   #composer { width: 340px; display: flex; flex-direction: column; border-left: 1px solid #30363d; background: #10151c; }
   #chead { padding: 8px 10px; font-size: 12px; border-bottom: 1px solid #30363d; }
   #chead small { color: #8b949e; display: block; }
@@ -75,7 +98,8 @@
     <span id="status">connecting…</span>
     <span id="who"></span>
     <span class="badge" title="Guests can watch and compose, never execute">view-only</span>
-    <span id="lat" style="margin-left:auto;color:#8b949e"></span>
+    <button id="boardtoggle" style="margin-left:auto">🗂 board</button>
+    <span id="lat" style="color:#8b949e"></span>
   </div>
   <div id="main">
     <div id="termwrap">
@@ -99,6 +123,28 @@
     <button id="cmic" title="Hold to dictate">🎤 hold</button>
     <button id="cundo" title="Undo your last edit">undo mine</button>
   </div>
+    </div>
+  </div>
+  <div id="board" hidden>
+    <div id="boardhead">
+      Domain Board
+      <small>proposed cards need host confirmation · drag events to order the process</small>
+      <form id="cardform">
+        <select id="cardtype">
+          <option value="event">Domain Event</option>
+          <option value="command">Command</option>
+          <option value="actor">Actor/Role</option>
+          <option value="term">Term/Rule</option>
+        </select>
+        <input id="cardtext" placeholder="e.g. ClaimDenied" maxlength="300">
+        <button>add</button>
+      </form>
+    </div>
+    <div id="lanes">
+      <div class="lane" data-type="event"><h4>Events</h4><div class="cards"></div></div>
+      <div class="lane" data-type="command"><h4>Commands</h4><div class="cards"></div></div>
+      <div class="lane" data-type="actor"><h4>Actors</h4><div class="cards"></div></div>
+      <div class="lane" data-type="term"><h4>Terms & Rules</h4><div class="cards"></div></div>
     </div>
   </div>
   <div id="shutter">
