@@ -1,0 +1,35 @@
+internal/adapter/generic_test.go
+  s_6f6ec78b82b8ab::t_d91176068f0095 17,20-23
+internal/adapter/agentsmd_test.go
+  s_6f6ec78b82b8ab::t_0ffe6c81b7d5e4 1-68
+docs/compat.md
+  s_6f6ec78b82b8ab::t_2e3693c5c7190a 20-21,24-29,31-35
+internal/adapter/claudecode.go
+  s_6f6ec78b82b8ab::t_477221ddfd6e49 35-42,51,69
+cmd/tandem/main.go
+  s_6f6ec78b82b8ab::t_46348b36507008 194-199
+internal/adapter/agentsmd.go
+  s_6f6ec78b82b8ab::t_d2658a853e142c 1-27
+internal/adapter/generic.go
+  s_6f6ec78b82b8ab::t_699a9b3a02b977 19-24
+  s_6f6ec78b82b8ab::t_e9394bee8b2ccd 54-57,62,66-68,77-79
+  s_6f6ec78b82b8ab::t_3ed3ed96d4e503 35-36
+  s_6f6ec78b82b8ab::t_0f5d3aa68c91e9 88-92
+  s_6f6ec78b82b8ab::t_d199d96e5a783e 37-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "a04ddc94d39a83890d8779218baaf75fd66d9535",
+  "prompts": {},
+  "sessions": {
+    "s_6f6ec78b82b8ab": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bec6cfe5-ff7d-4a69-ab17-a9a2c994e32d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
