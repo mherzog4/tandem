@@ -44,6 +44,21 @@ type Proposal struct {
 	Quote      string  `json:"quote"`      // transcript provenance
 }
 
+// Conflict is a vocabulary drift flag (FR17): the transcript used a
+// term differently than a confirmed card defines it.
+type Conflict struct {
+	CardText   string  `json:"cardText"`   // the confirmed card's wording
+	Usage      string  `json:"usage"`      // how the transcript used it
+	Quote      string  `json:"quote"`      // transcript provenance
+	Confidence float64 `json:"confidence"` // 0..1
+}
+
+// response is the full model output shape.
+type response struct {
+	Cards     []Proposal `json:"cards"`
+	Conflicts []Conflict `json:"conflicts"`
+}
+
 // complete is the LLM call, injectable for tests.
 type complete func(ctx context.Context, prompt string) (string, error)
 
@@ -57,6 +72,9 @@ type Extractor struct {
 	llm     complete
 	propose func([]board.Card) // receives accepted proposals
 	cards   func() []board.Card
+
+	// OnDrift, if set, receives vocabulary drift flags (FR17).
+	OnDrift func([]Conflict)
 }
 
 // New returns an Extractor if the environment provides credentials
@@ -147,7 +165,14 @@ func (e *Extractor) tick(ctx context.Context) {
 	var knownList []string
 	for _, c := range existing {
 		known[normalize(c.Text)] = true
-		knownList = append(knownList, c.Type+": "+c.Text)
+		entry := c.Type + ": " + c.Text
+		if c.CodeName != "" {
+			entry += " (code: " + c.CodeName + ")"
+		}
+		if c.State == board.StateConfirmed {
+			entry += " [confirmed]"
+		}
+		knownList = append(knownList, entry)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
@@ -157,9 +182,21 @@ func (e *Extractor) tick(ctx context.Context) {
 		return // transient failure: next tick retries with fresh window
 	}
 
-	accepted := filter(parseProposals(raw), known)
+	resp := parseResponse(raw)
+	accepted := filter(resp.Cards, known)
 	if len(accepted) > 0 {
 		e.propose(accepted)
+	}
+	if e.OnDrift != nil {
+		var real []Conflict
+		for _, c := range resp.Conflicts {
+			if c.Confidence >= MinConfidence && c.CardText != "" && c.Usage != "" {
+				real = append(real, c)
+			}
+		}
+		if len(real) > 0 {
+			e.OnDrift(real)
+		}
 	}
 }
 
@@ -168,7 +205,10 @@ func (e *Extractor) Tick(ctx context.Context) { e.tick(ctx) }
 
 func buildPrompt(window string, known []string) string {
 	var b strings.Builder
-	b.WriteString(`You watch a pairing session between a software engineer and a business domain expert working with a coding agent. Extract NEW domain model elements from the transcript below into EventStorming cards.
+	b.WriteString(`You watch a pairing session between a software engineer and a business domain expert working with a coding agent. Two jobs:
+
+1. Extract NEW domain model elements from the transcript below into EventStorming cards ("cards").
+2. Flag vocabulary drift ("conflicts"): places where the transcript — especially the agent's output — uses a term DIFFERENTLY than a confirmed board card defines it. Drift is the earliest signal of a misbuild. Renaming, conflating two terms, or contradicting a confirmed rule all count. Mere mention of a term is NOT drift.
 
 Card types:
 - "event": a domain event, past tense (e.g. "Claim Denied")
@@ -192,23 +232,33 @@ Already on the board (do NOT repropose):
 		b.WriteString("- " + k + "\n")
 	}
 	b.WriteString("\nTranscript window:\n---\n" + window + "\n---\n\n")
-	b.WriteString(`Respond with ONLY a JSON array (no prose, no code fences): [{"type":"event","text":"...","confidence":0.9,"quote":"..."}]`)
+	b.WriteString(`Respond with ONLY a JSON object (no prose, no code fences):
+{"cards":[{"type":"event","text":"...","confidence":0.9,"quote":"..."}],
+ "conflicts":[{"cardText":"<confirmed card wording>","usage":"<how the transcript used it>","quote":"...","confidence":0.9}]}`)
 	return b.String()
 }
 
-// parseProposals tolerates prose around the JSON: it scans for the
-// first '[' and unmarshals from there.
-func parseProposals(raw string) []Proposal {
-	start := strings.Index(raw, "[")
-	if start < 0 {
-		return nil
+// parseResponse tolerates prose around the JSON: it decodes from the
+// first bracket that opens the payload. A bare array (cards-only) is
+// accepted alongside the full object shape — whichever bracket comes
+// first decides, since an object nested inside an array (or vice
+// versa) would otherwise hijack the scan.
+func parseResponse(raw string) response {
+	obj := strings.Index(raw, "{")
+	arr := strings.Index(raw, "[")
+	if arr >= 0 && (obj < 0 || arr < obj) {
+		var cards []Proposal
+		if json.NewDecoder(strings.NewReader(raw[arr:])).Decode(&cards) == nil {
+			return response{Cards: cards}
+		}
 	}
-	dec := json.NewDecoder(strings.NewReader(raw[start:]))
-	var out []Proposal
-	if err := dec.Decode(&out); err != nil {
-		return nil
+	if obj >= 0 {
+		var out response
+		if json.NewDecoder(strings.NewReader(raw[obj:])).Decode(&out) == nil {
+			return out
+		}
 	}
-	return out
+	return response{}
 }
 
 func filter(props []Proposal, known map[string]bool) []board.Card {

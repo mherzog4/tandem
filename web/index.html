@@ -48,6 +48,11 @@
   #quotebtn { position: absolute; left: 12px; bottom: 10px; z-index: 6; }
   #quotebtn[hidden] { display: none; }
   #boardtoggle { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+  #driftbar { position: absolute; left: 12px; top: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 7; max-width: 60%; }
+  .drift { background: #3d2300ee; border: 1px solid #d29922; border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+  .drift b { color: #d29922; }
+  .drift .actions { margin-top: 4px; display: flex; gap: 6px; }
+  .drift button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 5px; font-size: 11px; padding: 1px 8px; cursor: pointer; }
   #board { position: fixed; left: 0; right: 340px; bottom: 0; height: 230px; background: #10151c;
            border-top: 1px solid #30363d; z-index: 8; display: flex; flex-direction: column; }
   #board[hidden] { display: none; }
@@ -117,6 +122,7 @@
       <div id="pointer-layer"></div>
       <div id="reactions"></div>
       <button id="quotebtn" hidden>💬 quote selection</button>
+      <div id="driftbar"></div>
       <div id="reactbar">
         <button data-emoji="👍">👍</button><button data-emoji="❤️">❤️</button>
         <button data-emoji="😮">😮</button><button data-emoji="❓">❓</button>

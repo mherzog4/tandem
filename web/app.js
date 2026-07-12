@@ -585,6 +585,40 @@
         showPing(ctrl.author, ctrl.x, ctrl.y);
       } else if (ctrl.type === "react" && ctrl.author !== name) {
         showReaction(ctrl.author, ctrl.emoji);
+      } else if (ctrl.type === "drift" && Array.isArray(ctrl.conflicts)) {
+        // Vocabulary drift (FR17): surface without interrupting; each
+        // flag can be dismissed or turned into a quoted correction.
+        const bar = document.getElementById("driftbar");
+        for (const cf of ctrl.conflicts.slice(0, 3)) {
+          const el = document.createElement("div");
+          el.className = "drift";
+          const msg = document.createElement("div");
+          const b = document.createElement("b");
+          b.textContent = "⚠ vocabulary drift: ";
+          msg.appendChild(b);
+          msg.appendChild(document.createTextNode(`"${cf.usage}" conflicts with the confirmed card "${cf.cardText}"`));
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          const correct = document.createElement("button");
+          correct.textContent = "✏ correct in composer";
+          correct.addEventListener("click", () => {
+            cinput.focus();
+            const end = cinput.value.length;
+            cinput.setSelectionRange(end, end);
+            const text = `${end ? "\n" : ""}> "${cf.quote || cf.usage}" — this conflicts with "${cf.cardText}": `;
+            if (!document.execCommand("insertText", false, text)) {
+              cinput.value += text;
+              cinput.dispatchEvent(new Event("input"));
+            }
+            el.remove();
+          });
+          const dismiss = document.createElement("button");
+          dismiss.textContent = "dismiss";
+          dismiss.addEventListener("click", () => el.remove());
+          actions.append(correct, dismiss);
+          el.append(msg, actions);
+          bar.appendChild(el);
+        }
       } else if (ctrl.type === "board-state") {
         comp.board = ctrl.cards || [];
         renderBoard(comp.board);
