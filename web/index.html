@@ -42,6 +42,8 @@
   #cfoot { display: flex; gap: 8px; align-items: center; padding: 6px 10px; border-top: 1px solid #30363d; font-size: 12px; }
   #cauthors { flex: 1; color: #8b949e; }
   #cfoot button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+  #cmic.rec { background: #da3633; border-color: #f85149; }
+  #cmic[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -67,7 +69,11 @@
         <div id="cmirror" aria-hidden="true"></div>
         <textarea id="cinput" spellcheck="false" placeholder="Type what should happen, in your words…"></textarea>
       </div>
-      <div id="cfoot"><span id="cauthors"></span><button id="cundo" title="Undo your last edit">undo mine</button></div>
+      <div id="cfoot">
+    <span id="cauthors"></span>
+    <button id="cmic" title="Hold to dictate">🎤 hold</button>
+    <button id="cundo" title="Undo your last edit">undo mine</button>
+  </div>
     </div>
   </div>
   <div id="shutter">

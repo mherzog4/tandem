@@ -287,6 +287,62 @@
 
     document.getElementById("cundo").addEventListener("click", () => sendCtrl({ type: "undo", author: name }));
 
+    // ---- Dictation (FR9): push-to-talk via the browser's native
+    // SpeechRecognition. No audio ever leaves through the relay and no
+    // API keys are needed; the trade-off (speech is processed by the
+    // browser vendor's recognizer) is documented in docs/compat.md. A
+    // hosted Whisper backend can slot in behind insertDictation later.
+    function insertDictation(text) {
+      if (!text) return;
+      cinput.focus();
+      // execCommand fires the input event, so the normal op path runs.
+      if (!document.execCommand("insertText", false, text)) {
+        const s = cinput.selectionStart, e = cinput.selectionEnd;
+        cinput.value = cinput.value.slice(0, s) + text + cinput.value.slice(e);
+        cinput.setSelectionRange(s + text.length, s + text.length);
+        cinput.dispatchEvent(new Event("input"));
+      }
+    }
+
+    const micBtn = document.getElementById("cmic");
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      micBtn.hidden = true; // Firefox: no native recognition
+    } else {
+      let rec = null;
+      const start = (ev) => {
+        ev.preventDefault();
+        if (rec) return;
+        rec = new SR();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = (e) => {
+          let final = "";
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+            if (e.results[i].isFinal) final += e.results[i][0].transcript;
+            else statusEl.textContent = `🎤 ${e.results[i][0].transcript}`;
+          }
+          if (final) insertDictation(final.trim() + " ");
+        };
+        rec.onerror = (e) => { statusEl.textContent = `mic error: ${e.error}`; };
+        rec.onend = () => { statusEl.textContent = "live"; };
+        rec.start();
+        micBtn.classList.add("rec");
+        statusEl.textContent = "🎤 listening…";
+      };
+      const stop = () => {
+        if (!rec) return;
+        rec.stop();
+        rec = null;
+        micBtn.classList.remove("rec");
+      };
+      micBtn.addEventListener("mousedown", start);
+      micBtn.addEventListener("touchstart", start);
+      micBtn.addEventListener("mouseup", stop);
+      micBtn.addEventListener("mouseleave", stop);
+      micBtn.addEventListener("touchend", stop);
+    }
+
     let cursorTimer = null;
     document.addEventListener("selectionchange", () => {
       if (document.activeElement !== cinput || cursorTimer) return;

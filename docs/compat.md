@@ -25,3 +25,17 @@ submissions (`docs/protocol.md`).
 Known limits: mirroring assumes the agent's input widget behaves like a
 line editor (chars append, 0x7f deletes). If a TUI misbehaves, drop the
 flag — submit-time injection always works.
+
+## Dictation (FR9)
+
+Push-to-talk uses the browser's native `SpeechRecognition` (Chrome,
+Edge, Safari; the mic button hides on Firefox). Final transcripts
+insert at the guest's cursor through the normal composer-op path, so
+attribution and undo work like typed text.
+
+Trade-off vs the PRD's "Whisper-class model": speech is processed by
+the browser vendor's recognizer rather than a model we choose, but no
+audio ever crosses the relay and no API keys are required. For
+privacy-sensitive teams a hosted/local Whisper backend can replace the
+recognizer behind the same `insertDictation` seam — audio would then
+travel sealed like every other frame.
