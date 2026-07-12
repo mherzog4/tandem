@@ -28,7 +28,9 @@
   function sessionInfo() {
     const m = location.pathname.match(/\/s\/([^/]+)/);
     const frag = new URLSearchParams(location.hash.slice(1));
-    return { id: m && m[1], keyB64: frag.get("k") };
+    // hostToken is a capability: present only on the link the daemon
+    // prints for the host. It gates confirm/alias actions.
+    return { id: m && m[1], keyB64: frag.get("k"), hostToken: frag.get("h") };
   }
 
   async function importKey(keyB64) {
@@ -71,7 +73,7 @@
 
   async function start() {
     const name = document.getElementById("name").value.trim() || "guest";
-    const { id, keyB64 } = sessionInfo();
+    const { id, keyB64, hostToken } = sessionInfo();
     if (!id || !keyB64) {
       errEl.textContent = "Bad link: missing session ID or key fragment.";
       return;
@@ -464,6 +466,30 @@
           meta.textContent = `${c.author} · ${c.state}${c.codeName ? ` · code: ${c.codeName}` : ""}`;
 
           el.append(del, text, meta);
+
+          // Host-only controls (FR13): confirm proposed cards, map a
+          // code-name alias (PRD risk 5). Gated by the capability token
+          // server-side; guests simply don't render these.
+          if (hostToken) {
+            const row = document.createElement("small");
+            if (c.state === "proposed") {
+              const ok = document.createElement("button");
+              ok.textContent = "✓ confirm";
+              ok.className = "cardbtn";
+              ok.addEventListener("click", () =>
+                sendCtrl({ type: "board-confirm", id: c.id, author: name, token: hostToken }));
+              row.appendChild(ok);
+            }
+            const alias = document.createElement("button");
+            alias.textContent = c.codeName ? "edit code name" : "+ code name";
+            alias.className = "cardbtn";
+            alias.addEventListener("click", () => {
+              const v = prompt(`Code name for "${c.text}"`, c.codeName || "");
+              if (v !== null) sendCtrl({ type: "board-alias", id: c.id, text: v.trim(), author: name, token: hostToken });
+            });
+            row.appendChild(alias);
+            el.appendChild(row);
+          }
 
           // Double-click edits in place; stakeholder wording wins by
           // default so anyone can rewrite (FR13's editing half).

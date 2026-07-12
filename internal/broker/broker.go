@@ -9,6 +9,9 @@
 package broker
 
 import (
+	"crypto/rand"
+	"crypto/subtle"
+	"encoding/base64"
 	"encoding/json"
 	"sync/atomic"
 
@@ -21,6 +24,11 @@ type Broker struct {
 	Doc   *composer.Doc
 	Board *board.Board
 	link  *hostlink.Link
+
+	// HostToken is the capability that gates host-only board actions
+	// (confirm, alias). It is printed only on the host's own link and
+	// never sent to guests (FR13: host confirms).
+	HostToken string
 
 	// Dropped counts guest frames rejected by the allowlist — a spike is
 	// a probe signal worth surfacing later.
@@ -42,7 +50,16 @@ func (b *Broker) changed() {
 }
 
 func New(link *hostlink.Link) *Broker {
-	b := &Broker{Doc: composer.NewDoc(), Board: board.New(), link: link}
+	tok := make([]byte, 16)
+	if _, err := rand.Read(tok); err != nil {
+		panic(err)
+	}
+	b := &Broker{
+		Doc:       composer.NewDoc(),
+		Board:     board.New(),
+		link:      link,
+		HostToken: base64.RawURLEncoding.EncodeToString(tok),
+	}
 	link.OnGuestJoin = func(string) { b.sendSnapshot(); b.sendBoard() }
 	return b
 }
@@ -68,6 +85,7 @@ type guestMsg struct {
 	CardType string `json:"cardType"`
 	Text     string `json:"text"`
 	ToIndex  int    `json:"toIndex"`
+	Token    string `json:"token"`
 }
 
 func (b *Broker) handle(frame []byte) {
@@ -161,9 +179,27 @@ func (b *Broker) handle(frame []byte) {
 			return
 		}
 		b.sendBoard()
+	case "board-confirm":
+		if !b.isHost(msg.Token) || !b.Board.Confirm(msg.ID) {
+			b.Dropped.Add(1)
+			return
+		}
+		b.sendBoard()
+	case "board-alias":
+		if !b.isHost(msg.Token) || len(msg.Text) > 128 || !b.Board.SetAlias(msg.ID, msg.Text) {
+			b.Dropped.Add(1)
+			return
+		}
+		b.sendBoard()
 	default:
 		b.Dropped.Add(1)
 	}
+}
+
+// isHost checks the capability token in constant time.
+func (b *Broker) isHost(token string) bool {
+	return len(token) == len(b.HostToken) &&
+		subtle.ConstantTimeCompare([]byte(token), []byte(b.HostToken)) == 1
 }
 
 func (b *Broker) sendBoard() {

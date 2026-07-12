@@ -138,6 +138,42 @@ func (b *Board) Delete(id string) bool {
 	return false
 }
 
+// Confirm marks a card authoritative (host-only; the broker gates this
+// behind the host capability token, FR13).
+func (b *Board) Confirm(id string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i := range b.cards {
+		if b.cards[i].ID == id {
+			b.cards[i].State = StateConfirmed
+			return true
+		}
+	}
+	return false
+}
+
+// SetAlias records the engineer-facing code name (PRD risk 5). The
+// business wording in Text is untouched — the stakeholder's language
+// always wins for display.
+func (b *Board) SetAlias(id, codeName string) bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i := range b.cards {
+		if b.cards[i].ID == id {
+			b.cards[i].CodeName = codeName
+			return true
+		}
+	}
+	return false
+}
+
+// Load replaces the board contents (session preload, FR20).
+func (b *Board) Load(cards []Card) {
+	b.mu.Lock()
+	b.cards = append([]Card{}, cards...)
+	b.mu.Unlock()
+}
+
 // Cards returns the board in order (a copy).
 func (b *Board) Cards() []Card {
 	b.mu.Lock()
