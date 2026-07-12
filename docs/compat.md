@@ -16,9 +16,9 @@ to run it (the guest can never execute — their terminal has no stdin path).
 
 | Agent | With mirror (default) | Domain injection |
 |-------|----------------------|------------------|
-| Claude Code (`claude`, `claude-*`) | clean — Claude strips the bracketed-paste markers, so the guest text renders normally in the prompt | managed `CLAUDE.md` include importing `DOMAIN.md` |
-| Known agent CLIs (see list) | works; cleanliness depends on whether the agent's input strips bracketed paste | confirmed-card digest prepended at run (≤1 KiB) |
-| Plain shells / anything else | works but bracketed-paste markers may show (shells don't strip them) — use `--no-mirror` for a clean shell | with `--no-mirror`, `Ctrl-]` copies the prompt to the host clipboard (OSC 52) |
+| Claude Code (`claude`, `claude-*`) | clean | managed `CLAUDE.md` include importing `DOMAIN.md` |
+| Known agent CLIs (see list) | clean | confirmed-card digest prepended at run (≤1 KiB) |
+| Plain shells / anything else | clean | with `--no-mirror`, `Ctrl-]` copies the prompt to the host clipboard (OSC 52) |
 
 **Prepend tier — recognized by binary name** (`internal/adapter/generic.go`):
 `codex`, `gemini`, `aider`, `droid` (Factory), `cursor-agent`, `amp`,
@@ -40,21 +40,23 @@ provenance and the recap.
 ## How live mirroring works (default; `--no-mirror` to disable)
 
 The daemon converges the agent's input line on the Composer buffer:
-backspaces to the common prefix, retype the suffix inside a bracketed
-paste. Newlines/tabs flatten to spaces while composing (the real
-newlines return at run). Mirroring pauses while the host is typing
+backspaces to the common prefix, then types the new suffix as raw
+keystrokes (not a bracketed paste), so it renders cleanly on every
+agent. Newlines/tabs flatten to spaces (single line). Mirroring pauses while the host is typing
 (1 s of keyboard idle required) so two writers never interleave, and
 every mirror write passes the same Ed25519 signing chokepoint as
 submissions (`docs/protocol.md`).
 
-**Run = `Ctrl-]`.** It erases the live preview (backspaces), then injects
-the authoritative signed buffer as a bracketed paste plus Enter, and clears
-the Composer. Because the preview is already on the line, no text is doubled.
+**Run = `Ctrl-]`.** It erases the live preview (backspaces), retypes the
+authoritative signed buffer as raw keystrokes on one line, and presses Enter,
+then clears the Composer. Raw (not bracketed paste) so the run is clean on
+every agent; no text is doubled. (With `--no-mirror`, submit uses bracketed
+paste, which preserves multi-line prompts on agents that strip the markers.)
 
-Known limits: mirroring assumes the agent's input behaves like a line editor
-(chars append, `0x7f` deletes) and strips bracketed-paste markers. Claude Code
-does both. Plain shells (bash/zsh) don't strip the markers, so the preview
-shows `…~` cruft — run those with `--no-mirror`.
+Known limit: mirroring assumes the agent's input behaves like a line editor
+(characters append, `0x7f` deletes). That holds for Claude Code and plain
+shells alike. If a particular TUI mangles it, `--no-mirror` falls back to the
+compose-then-submit model.
 
 ## Dictation (FR9)
 

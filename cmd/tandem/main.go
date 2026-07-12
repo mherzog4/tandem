@@ -299,10 +299,19 @@ func run() int {
 					fmt.Fprint(os.Stderr, "\r\ntandem: composed prompt copied to clipboard — paste to send\r\n")
 					return
 				}
-				if clearSeq != "" {
-					injector.Submit(sign.SignRaw(clearSeq))
+				if mir != nil {
+					// Mirroring: erase the live preview, then retype the
+					// authoritative text raw on one line and press Enter.
+					// Raw (not bracketed paste) so it runs cleanly on every
+					// agent — shells don't strip paste markers. The text was
+					// already signed as it mirrored; this is the same
+					// chokepoint. Newlines flatten to spaces (single line).
+					injector.Submit(sign.SignRaw(clearSeq + flattenLine(text) + "\r"))
+				} else {
+					// No mirror: bracketed paste + Enter (preserves
+					// multi-line prompts; clean on agents that strip markers).
+					injector.Submit(sign.Sign(text))
 				}
-				injector.Submit(sign.Sign(text))
 				fmt.Fprint(os.Stdout, "\a") // host cue: it ran
 			},
 		}
@@ -346,6 +355,24 @@ func run() int {
 		return 1
 	}
 	return code
+}
+
+// flattenLine collapses a prompt to a single line for raw injection:
+// newlines/tabs become spaces, other control runes drop. The mirror
+// preview is already single-line (sanitize); this keeps the run in sync.
+func flattenLine(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '\n' || r == '\t' || r == '\r':
+			b.WriteRune(' ')
+		case r < 0x20 || r == 0x7f:
+			// drop other control characters
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // copyToClipboard puts s on the host's terminal clipboard via OSC 52.
