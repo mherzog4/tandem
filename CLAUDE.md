@@ -4,7 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-Greenfield. The only artifact is `prd.md` — the PRD for **Tandem**, a tool that lets an engineer share a live coding-agent terminal session with a nontechnical stakeholder. No code, build system, or tests exist yet. Read `prd.md` before designing or implementing anything; it is the source of truth for requirements (FR1–FR24, NFR1–3) and milestones (M0–M3).
+Early build. `prd.md` is the source of truth for requirements (FR1–FR24, NFR1–3) and milestones (M0–M3); GitHub issues #1–#26 track the work, one issue per FR-cluster, grouped into milestones M0–M3.
+
+## Stack and layout
+
+**Go** (decided in issue #1): `creack/pty` for PTY wrapping (upterm, the PRD's cited prior art, is Go), trivially static cross-compiled binaries (NFR1), stdlib ed25519 for input signing (FR21). Single Go module `github.com/mherzog4/tandem`:
+
+- `cmd/tandem/` — host CLI daemon (PTY wrap, only stdin owner, signing, shutter)
+- `cmd/relay/` — stateless encrypted-frame relay (WebSocket)
+- `web/` — guest browser client (xterm.js, Composer, Domain Board)
+
+## Commands
+
+- Build: `go build ./...`
+- Test: `go test ./...` (single test: `go test ./path -run TestName`)
+- Vet: `go vet ./...`
+- Cross-compile check: `CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./...`
 
 ## Core invariant (never violate)
 
