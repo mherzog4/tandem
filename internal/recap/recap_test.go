@@ -31,8 +31,8 @@ func TestRecapContents(t *testing.T) {
 	for _, want := range []string{
 		"**Marcus**: 39 chars (51%)",
 		"**Priya**: 38 chars (49%)",
-		"[actor] Adjuster",       // added
-		"[event] New Wording",    // changed
+		"[actor] Adjuster",    // added
+		"[event] New Wording", // changed
 		"> a claim can be reopened within 90 days",
 		"2. ", // second prompt present
 	} {

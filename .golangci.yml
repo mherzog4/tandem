@@ -1,0 +1,23 @@
+version: "2"
+
+# Default linters (errcheck, govet, ineffassign, staticcheck, unused) plus
+# a couple of cheap correctness/spelling checks. errcheck is relaxed in
+# tests, where deferred Close()/Write() results are deliberately ignored.
+linters:
+  enable:
+    - misspell
+  settings:
+    errcheck:
+      # Cleanup/teardown and best-effort writes with no recourse if they fail.
+      exclude-functions:
+        - (*github.com/coder/websocket.Conn).Close
+        - (*os.File).Close
+        - golang.org/x/term.Restore
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck

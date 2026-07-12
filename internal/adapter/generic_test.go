@@ -17,9 +17,9 @@ func TestDetect(t *testing.T) {
 		{[]string{"codex"}, KindPrepend},
 		{[]string{"gemini", "chat"}, KindPrepend},
 		{[]string{"/opt/bin/aider"}, KindPrepend},
-		{[]string{"droid"}, KindPrepend},         // Factory
-		{[]string{"cursor-agent"}, KindPrepend},  // Cursor
-		{[]string{"amp"}, KindPrepend},           // Sourcegraph Amp
+		{[]string{"droid"}, KindPrepend},        // Factory
+		{[]string{"cursor-agent"}, KindPrepend}, // Cursor
+		{[]string{"amp"}, KindPrepend},          // Sourcegraph Amp
 		{[]string{"opencode", "run"}, KindPrepend},
 		{[]string{"/usr/bin/goose"}, KindPrepend},
 		{[]string{"crush"}, KindPrepend},

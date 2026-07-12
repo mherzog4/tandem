@@ -32,7 +32,7 @@ const MaxParticipants = 3
 // Presence is the only relay-originated message, sent as a text frame so
 // clients can distinguish it from opaque binary payloads.
 type Presence struct {
-	Type  string `json:"type"` // always "presence"
+	Type  string `json:"type"`  // always "presence"
 	Event string `json:"event"` // "join" or "leave"
 	Name  string `json:"name"`
 }
@@ -44,7 +44,7 @@ const HostGracePeriod = 2 * time.Minute
 
 type session struct {
 	mu          sync.Mutex
-	host        *websocket.Conn // nil while the host is disconnected
+	host        *websocket.Conn            // nil while the host is disconnected
 	guests      map[*websocket.Conn]string // conn -> display name
 	resumeToken string
 	reapTimer   *time.Timer // armed while host is disconnected

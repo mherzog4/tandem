@@ -71,10 +71,10 @@ func TestFalsePositives(t *testing.T) {
 		"normal terminal output with words\n",
 		"a claim can be reopened within 90 days\n",
 		"git commit -m 'add key handling for keyboard events'\n",
-		"the TOKEN variable is unset\n",           // no value assignment
-		"PASSWORD=short\n",                        // value under 8 chars
-		"eyJ short.not.jwt\n",                     // not a real JWT shape
-		"AKIA1234 too short\n",                    // not a full AWS key
+		"the TOKEN variable is unset\n", // no value assignment
+		"PASSWORD=short\n",              // value under 8 chars
+		"eyJ short.not.jwt\n",           // not a real JWT shape
+		"AKIA1234 too short\n",          // not a full AWS key
 		"ls -la /home/user/keys/\n",
 	}
 	for _, c := range clean {
