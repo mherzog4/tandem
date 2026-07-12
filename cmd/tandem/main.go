@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -23,8 +24,8 @@ import (
 	"github.com/mherzog4/tandem/internal/hostlink"
 	"github.com/mherzog4/tandem/internal/mirror"
 	"github.com/mherzog4/tandem/internal/ptywrap"
-	"github.com/mherzog4/tandem/internal/record"
 	"github.com/mherzog4/tandem/internal/recap"
+	"github.com/mherzog4/tandem/internal/record"
 	"github.com/mherzog4/tandem/internal/redact"
 	"github.com/mherzog4/tandem/internal/signer"
 )
@@ -55,6 +56,7 @@ func run() int {
 		return 2
 	}
 
+	agentKind := adapter.Detect(argv)
 	opts := ptywrap.Options{}
 	if *relayURL != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -127,12 +129,18 @@ func run() int {
 					domainDirty.Store(true)
 				}
 			}
-			// Claude Code adapter (FR15): managed CLAUDE.md include so
-			// DOMAIN.md is in context each conversation.
-			if adapter.IsClaude(argv) {
+			// Context injection adapter (FR15, PRD §8.3). Claude Code
+			// gets the managed CLAUDE.md include; other agents get a
+			// prompt-prepended digest or clipboard mode.
+			switch agentKind {
+			case adapter.KindClaude:
 				if err := adapter.EnsureClaudeInclude(cwd); err != nil {
 					fmt.Fprintf(os.Stderr, "tandem: CLAUDE.md include: %v\n", err)
 				}
+			case adapter.KindPrepend:
+				fmt.Fprintln(os.Stderr, "tandem: domain digest prepended to each submitted prompt")
+			case adapter.KindClipboard:
+				fmt.Fprintln(os.Stderr, "tandem: clipboard mode — Ctrl-] copies the composed prompt for you to paste")
 			}
 		}
 		// Domain extractor (FR12): watches the REDACTED transcript (the
@@ -232,11 +240,25 @@ func run() int {
 				if recorder != nil {
 					recorder.RecordSubmit(text, stats)
 				}
+				if ext != nil {
+					ext.NoteComposer(text)
+				}
+				// Prepend the confirmed-card digest for agents without a
+				// native include (Codex/Gemini/Aider); Claude Code reads
+				// DOMAIN.md via the CLAUDE.md include instead.
+				if agentKind == adapter.KindPrepend {
+					text = adapter.PrependPrompt(agentKind,
+						adapter.Digest(b.Board.Cards(), 1024), text)
+				}
 				if domainDirty.Swap(false) {
 					text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
 				}
-				if ext != nil {
-					ext.NoteComposer(text)
+				if agentKind == adapter.KindClipboard {
+					// No agent integration: copy to the host's clipboard
+					// via OSC 52 so they paste it into whatever's running.
+					fmt.Fprintf(os.Stdout, "\x1b]52;c;%s\a", base64.StdEncoding.EncodeToString([]byte(text)))
+					fmt.Fprint(os.Stderr, "\r\ntandem: composed prompt copied to clipboard — paste to send\r\n")
+					return
 				}
 				injector.Submit(sign.Sign(text))
 			},

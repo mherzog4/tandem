@@ -5,12 +5,20 @@ Composer, submit-time injection (`Ctrl-]` flushes the buffer into the
 agent as a bracketed paste + Enter). No agent-specific integration
 required (FR1).
 
-| Agent | Composer → input line | Notes |
-|-------|----------------------|-------|
-| Claude Code | live with `--mirror` (opt-in), otherwise submit-time | bracketed paste keeps slash menus/shortcuts from firing while mirroring |
-| Codex CLI / Gemini CLI / Aider | submit-time (default); `--mirror` may work but is untested | prompt-prepend context injection lands with issue #26 |
-| Plain shells (bash 4.4+, zsh) | submit-time | readline handles bracketed paste natively |
-| Anything else | submit-time | worst case per PRD risk 1: the Composer panel is the source of truth |
+Context injection (the confirmed Domain Board reaching the agent, FR15)
+varies by agent — `tandem` auto-detects from the wrapped command name
+(PRD §8.3):
+
+| Agent | Composer → input line | Domain injection |
+|-------|----------------------|------------------|
+| Claude Code (`claude`, `claude-*`) | live with `--mirror` (opt-in), otherwise submit-time | managed `CLAUDE.md` include importing `DOMAIN.md` |
+| Codex CLI / Gemini CLI / Aider (`codex`, `gemini`, `aider`) | submit-time; `--mirror` may work but is untested | compact confirmed-card digest prepended to each submitted prompt (≤1 KiB, overflow points to `DOMAIN.md`) |
+| Plain shells / anything else | submit-time | **clipboard mode**: `Ctrl-]` copies the composed prompt (with dirty-model note) to the host clipboard via OSC 52 — paste it wherever. The Board and `DOMAIN.md`/`domain.yaml` stay fully functional. |
+
+Clipboard mode uses the OSC 52 terminal escape, which most modern
+terminals (iTerm2, kitty, tmux with `set-clipboard on`, Ghostty,
+WezTerm) honor; if yours doesn't, the prompt is still in `DOMAIN.md`
+provenance and the recap.
 
 ## How live mirroring works (`--mirror`)
 
