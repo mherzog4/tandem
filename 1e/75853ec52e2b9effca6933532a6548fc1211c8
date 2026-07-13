@@ -1,0 +1,43 @@
+cmd/tandem/main_test.go
+  s_12c32008048a21::t_636de04f2de5e8 1-24
+cmd/tandem/doctor.go
+  s_12c32008048a21::t_4875b381e9596e 44,63-64,84
+internal/mirror/mirror_test.go
+  s_12c32008048a21::t_96e5f898663ce1 125-130
+  s_12c32008048a21::t_a4e600da5feb0d 110-124,131-132
+cmd/tandem/main.go
+  s_12c32008048a21::t_e671dfd1c0d488 106,109-113,283-286,300-308,313-349,377,391-393,439-444
+  s_12c32008048a21::t_4415afaf74dd4e 192-194,207-211,213-217,296-297,421
+  s_12c32008048a21::t_c1a77a4cf53eae 309-312
+  s_12c32008048a21::t_22b9350918474e 462-465,468
+internal/ptywrap/ptywrap.go
+  s_12c32008048a21::t_7cfa22efc2ba1f 37-40,97-101
+docs/protocol.md
+  s_12c32008048a21::t_7d37d7e691242c 71-80,84-87
+  s_12c32008048a21::t_60be0eb7a28cfe 60-62
+docs/compat.md
+  s_12c32008048a21::t_73e3333c6f36c4 3-6,13-16,56-71
+internal/mirror/mirror.go
+  s_12c32008048a21::t_a8a6e5182ea498 6-8,11-14,80-81,101-102
+  s_12c32008048a21::t_3e291fbe00171e 89-98
+README.md
+  s_12c32008048a21::t_1526cce2211ad4 38,81,120,125
+CHANGELOG.md
+  s_12c32008048a21::t_d32526be3a2614 9-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "1e75853ec52e2b9effca6933532a6548fc1211c8",
+  "prompts": {},
+  "sessions": {
+    "s_12c32008048a21": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_0a264421cffe3QwXLUrKHkTV9o",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Mherzog4 <matthewherzog4@gmail.com>"
+    }
+  }
+}
