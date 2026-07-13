@@ -57,9 +57,9 @@ anything else is dropped and counted (`Broker.Dropped`):
 
 There is no guest message that reaches the PTY. The PTY's stdin has
 exactly one writer: the host daemon's own terminal passthrough
-(`internal/ptywrap`), plus — once issue #12 lands — the host-signed
-submit path. Guest-originated `FramePTY` frames are explicitly dropped
-by the broker.
+(`internal/ptywrap`), plus the host-signed injector used for mirror and
+`--no-mirror` fallback input. Guest-originated `FramePTY` frames are
+explicitly dropped by the broker.
 
 Host → guest control messages: `resize`, `shutter`, `pong`,
 `composer-op`, `composer-snapshot`, `cursor`, `submitted` (per-author
@@ -68,13 +68,23 @@ stats after a flush), plus relay-originated plaintext presence events
 
 ## The submit path (FR8/FR21)
 
-`Ctrl-]` on the host terminal flushes the Composer: the daemon signs
-the buffer with a per-session in-memory Ed25519 key
+In the default live-mirror mode, guest Composer edits are rendered into
+the engineer's visible input line as signed raw keystrokes. The engineer
+then submits with normal terminal Enter. That Enter is not network input:
+it comes from the host's own keyboard through the PTY passthrough. After
+the Enter reaches the PTY, the daemon flushes the Composer state,
+records authorship, and broadcasts the submitted event.
+
+With `--no-mirror`, there is no visible input-line preview. In that
+fallback mode `Ctrl-]` on the host terminal flushes the Composer: the
+daemon signs the buffer with a per-session in-memory Ed25519 key
 (`internal/signer`), and `ptywrap.Injector` verifies signature and a
 strictly increasing sequence number before writing to the PTY (as a
 bracketed paste + carriage return). Forged, tampered, or replayed
-submissions are logged and dropped. Guests have no message type that
-reaches this path; the signing key never leaves the host process.
+submissions are logged and dropped.
+
+Guests have no message type that reaches either submit path; the signing
+key never leaves the host process.
 
 ## Adversarial coverage
 

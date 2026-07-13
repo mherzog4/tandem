@@ -3,16 +3,15 @@
 //
 // Strategy: keep the last string we typed into the agent; on every doc
 // change, erase back to the common prefix with backspaces and retype
-// the new suffix inside a bracketed paste (so TUIs treat it literally —
-// no slash menus, no shortcut interpretation). Newlines become spaces
-// while composing; the real newlines return at submit time, which uses
-// its own bracketed-paste path.
+// the new suffix as raw sanitized keystrokes. Newlines become spaces
+// while composing so the engineer can submit the visible line with
+// normal Enter.
 //
 // Fragility is managed, not denied (the PRD's own mitigation): the
-// Composer panel stays the source of truth, mirroring is opt-in
-// (--mirror), and it pauses whenever the host is typing so two writers
-// never interleave on the input line. Every write goes through the
-// signing chokepoint like any other network-derived input.
+// Composer panel stays the source of truth, mirroring can be disabled
+// (--no-mirror), and it pauses whenever the host is typing so two
+// writers never interleave on the input line. Every write goes through
+// the signing chokepoint like any other network-derived input.
 package mirror
 
 import (
@@ -78,7 +77,8 @@ func (m *Mirror) flush() {
 	}
 }
 
-// Reset forgets the mirrored state (after a submit cleared the line).
+// Reset forgets the mirrored state after the host's Enter submitted and
+// the agent cleared the line.
 func (m *Mirror) Reset() {
 	m.mu.Lock()
 	m.last = nil
@@ -86,10 +86,20 @@ func (m *Mirror) Reset() {
 	m.mu.Unlock()
 }
 
+// InSync reports whether text has already converged into the visible
+// input line. The daemon uses this before treating a host Enter as a
+// Composer submit; if an edit is still debouncing, the visible terminal
+// line is the source of truth and the Composer should remain intact.
+func (m *Mirror) InSync(text string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return !m.dirty && string(m.last) == string(sanitize(text))
+}
+
 // ClearAndReset returns the keystrokes that erase the currently mirrored
 // preview from the agent's input line (one backspace per rune) and
-// forgets the mirrored state. Used at submit time so the authoritative
-// paste replaces the live preview instead of doubling it.
+// forgets the mirrored state. Kept for fallback paths that need to
+// abandon a visible preview.
 func (m *Mirror) ClearAndReset() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -122,7 +132,6 @@ func sanitize(s string) []rune {
 // every agent — shells don't strip paste markers, Claude Code does, and
 // raw sidesteps both. sanitize() has already dropped control runes and
 // flattened newlines, so the raw suffix carries no escape sequences.
-// The authoritative submit (Ctrl-]) still uses bracketed paste + Enter.
 func diffKeystrokes(old, new []rune) string {
 	p := 0
 	for p < len(old) && p < len(new) && old[p] == new[p] {

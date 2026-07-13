@@ -41,7 +41,7 @@ func doctor(relay string) int {
 
 	// 2. Controlling TTY: the key intercepts and launch wait need one.
 	if term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stdout.Fd())) {
-		fmt.Println("  ✓ terminal detected — Ctrl-] run, Ctrl-\\ shutter, Ctrl-^ copy-link are available")
+		fmt.Println("  ✓ terminal detected — Enter submits normally; Ctrl-\\ shutter and Ctrl-^ copy-link are available")
 	} else {
 		ok = false
 		fmt.Println("  ✗ no terminal — key intercepts and the share-then-launch wait are disabled")
@@ -60,8 +60,8 @@ func doctor(relay string) int {
 	fmt.Println("      not copy, enable clipboard access in your terminal's settings.")
 
 	// 4. Bracketed-paste note for --no-mirror.
-	fmt.Println("  • --no-mirror submits with bracketed paste; coding agents accept it,")
-	fmt.Println("      but a plain shell may show marker cruft (use the default mirror).")
+	fmt.Println("  • --no-mirror disables live prompt mirroring; Ctrl-] then submits with")
+	fmt.Println("      bracketed paste for coding agents that need the fallback path.")
 
 	fmt.Println()
 	if ok {
@@ -81,7 +81,7 @@ func quickstart() {
 	fmt.Println("  tandem claude            # or codex, aider, gemini, or any command")
 	fmt.Println()
 	fmt.Println("Your stakeholder joins in a browser and types into your prompt live;")
-	fmt.Println("you review and press Ctrl-] to run it. They can't execute anything.")
+	fmt.Println("you review, edit if needed, and press Enter like usual. They can't execute anything.")
 	fmt.Println()
 	fmt.Println("Useful flags and commands:")
 	fmt.Println("  tandem doctor            check the relay and terminal before you start")
