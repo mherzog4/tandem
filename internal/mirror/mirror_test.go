@@ -107,3 +107,26 @@ func TestClearAndReset(t *testing.T) {
 		t.Fatalf("post-clear compose = %q", got)
 	}
 }
+
+func TestInSync(t *testing.T) {
+	c := &capture{}
+	m := New(c.submit, nil)
+	m.Update("hello")
+	if m.InSync("hello") {
+		t.Fatal("reported sync before debounce flushed")
+	}
+	wait()
+	if !m.InSync("hello") {
+		t.Fatal("did not report sync after mirror flushed")
+	}
+	m.Update("hello world")
+	if m.InSync("hello world") {
+		t.Fatal("reported sync while update is dirty")
+	}
+	wait()
+	m.Update("hello\n")
+	wait()
+	if !m.InSync("hello\n") {
+		t.Fatal("sync check should use sanitized text")
+	}
+}

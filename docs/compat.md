@@ -1,18 +1,19 @@
 # Agent compatibility matrix
 
-Baseline for **every** terminal program: shared terminal view, gated
-Composer, submit-time injection (`Ctrl-]` flushes the buffer into the
-agent as a bracketed paste + Enter). No agent-specific integration
-required (FR1).
+Baseline for **every** terminal program: shared terminal view and gated
+Composer. In default mirror mode, guest text appears in the engineer's
+normal input line and the engineer presses Enter as usual. No
+agent-specific integration required for baseline sharing (FR1).
 
 Context injection (the confirmed Domain Board reaching the agent, FR15)
 varies by agent — `tandem` auto-detects from the wrapped command name
 (PRD §8.3):
 
 **Default: live mirroring is ON.** The guest's Composer text appears live in
-the engineer's agent input line; the engineer reviews it and presses `Ctrl-]`
-to run it (the guest can never execute — their terminal has no stdin path).
-`--no-mirror` turns this off and falls back to the compose-then-submit model.
+the engineer's agent input line; the engineer reviews or edits it and presses
+Enter to run it (the guest can never execute — their terminal has no stdin
+path). `--no-mirror` turns this off and falls back to the compose-then-submit
+model, where `Ctrl-]` sends the Composer.
 
 | Agent | With mirror (default) | Domain injection |
 |-------|----------------------|------------------|
@@ -52,13 +53,22 @@ keystrokes (not a bracketed paste), so it renders cleanly on every
 agent. Newlines/tabs flatten to spaces (single line). Mirroring pauses while the host is typing
 (1 s of keyboard idle required) so two writers never interleave, and
 every mirror write passes the same Ed25519 signing chokepoint as
-submissions (`docs/protocol.md`).
+fallback submissions (`docs/protocol.md`).
 
-**Run = `Ctrl-]`.** It erases the live preview (backspaces), retypes the
-authoritative signed buffer as raw keystrokes on one line, and presses Enter,
-then clears the Composer. Raw (not bracketed paste) so the run is clean on
-every agent; no text is doubled. (With `--no-mirror`, submit uses bracketed
-paste, which preserves multi-line prompts on agents that strip the markers.)
+**Run = Enter.** The engineer submits the visible input line normally. Tandem
+observes that local Enter after it reaches the PTY, clears the Composer, and
+broadcasts the submitted event. This means any direct edits the engineer made
+in the terminal are preserved; Tandem does not erase and retype the line at
+submit time.
+
+With `--no-mirror`, submit uses `Ctrl-]` plus bracketed paste, which preserves
+multi-line prompts on agents that strip the markers. Use that fallback if a
+particular TUI cannot tolerate live prompt mirroring.
+
+Known limit: agents in the prepend-only tier receive the Domain Board digest at
+`Ctrl-]` submit time in `--no-mirror` mode. In default mirror mode, Enter sends
+the visible terminal line exactly as typed; file-based context adapters
+(`CLAUDE.md`/`AGENTS.md`) remain the clean path for automatic domain context.
 
 Known limit: mirroring assumes the agent's input behaves like a line editor
 (characters append, `0x7f` deletes). That holds for Claude Code and plain

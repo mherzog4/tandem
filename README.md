@@ -35,7 +35,7 @@ its stdin. A relay forwards end-to-end-encrypted frames between the host and
 its guests; it only ever sees ciphertext, because the session key rides in the
 join link's `#` fragment, which browsers never send to a server. The guest
 joins in a browser with no install. What they type shows up live in the
-engineer's prompt; the engineer reviews it and presses `Ctrl-]` to run it.
+engineer's prompt; the engineer reviews or edits it and presses Enter as usual.
 Guests cannot execute. Their terminal is read-only and their keystrokes have
 no path to the PTY, and every injected keystroke passes an Ed25519 signing
 check first. That is a structural guarantee, not a hidden button. See
@@ -78,7 +78,7 @@ sequenceDiagram
     H->>A: inject as signed keystrokes
     A->>G: the prompt now shows the text
     Note over G,A: the stakeholder can type, never run
-    H->>A: engineer presses Ctrl-] (their keyboard only)
+    H->>A: engineer presses Enter (their keyboard only)
     A->>A: runs the prompt
 ```
 
@@ -117,12 +117,12 @@ clipboard, and pauses so you can share it before the agent takes the screen.
 Send the link to your stakeholder, then press Enter to launch.
 
 The loop: they type in the browser, it appears live in your agent's prompt,
-you review or edit it, and you press `Ctrl-]` to run it. They can watch and
+you review or edit it, and you press Enter like normal. They can watch and
 write the prompt, but only your keyboard runs anything.
 
 | Key or flag | What it does |
 |-------------|--------------|
-| `Ctrl-]` | run the composed prompt |
+| Enter | run the visible terminal line as usual |
 | `Ctrl-\` | privacy shutter (guest sees a paused card) |
 | `--no-mirror` | stop mirroring into the prompt; guests compose in a side panel and `Ctrl-]` sends it |
 | `--no-wait` | launch immediately instead of pausing to share the link |

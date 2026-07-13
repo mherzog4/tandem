@@ -34,9 +34,10 @@ type Options struct {
 	// (the Composer buffer) may reach the child's stdin. Every
 	// submission is signature-verified first (FR21).
 	Injector *Injector
-	// OnHostInput fires whenever the host's own keystrokes flow to the
-	// child. The mirror layer uses it to yield while the host types.
-	OnHostInput func()
+	// OnHostInput fires after the host's own keystrokes flow to the
+	// child. The mirror layer uses it to yield while the host types and
+	// to observe the host's local Enter submit.
+	OnHostInput func([]byte)
 }
 
 // Run executes argv inside a PTY, wiring the current process's terminal
@@ -93,8 +94,11 @@ func Run(argv []string, opts Options) (int, error) {
 		var dst io.Writer = ptmx
 		if opts.OnHostInput != nil {
 			dst = writerFunc(func(p []byte) (int, error) {
-				opts.OnHostInput()
-				return ptmx.Write(p)
+				n, err := ptmx.Write(p)
+				if n > 0 {
+					opts.OnHostInput(p[:n])
+				}
+				return n, err
 			})
 		}
 		if len(opts.Intercepts) > 0 {

@@ -6,6 +6,12 @@ aims for [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- **Native Enter submit in live mirror mode.** Guest text still mirrors into the
+  engineer's prompt through signed keystrokes, but the engineer now runs the
+  visible line with normal Enter instead of `Ctrl-]`. `Ctrl-]` remains the
+  `--no-mirror` fallback submit path.
+
 ## [0.5.0] — 2026-07-12
 
 ### Added

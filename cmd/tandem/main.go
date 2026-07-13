@@ -103,9 +103,14 @@ func run() int {
 		defer func() { _ = link.Close() }()
 		b := broker.New(link)
 		go b.Run()
+		mirrorOn := !*noMirror
 		fmt.Fprintf(os.Stderr, "tandem: session live — share %s\n", link.JoinURL)
 		fmt.Fprintf(os.Stderr, "tandem: your host link (confirm powers, keep private) %s&h=%s\n", link.JoinURL, b.HostToken)
-		fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer · Ctrl-^ re-copy join link")
+		if mirrorOn {
+			fmt.Fprintln(os.Stderr, "tandem: Enter submits your terminal as usual · Ctrl-\\ shutter · Ctrl-^ re-copy join link")
+		} else {
+			fmt.Fprintln(os.Stderr, "tandem: Ctrl-\\ shutter · Ctrl-] submit composer · Ctrl-^ re-copy join link")
+		}
 		if *allow != "" {
 			link.SetAllowlist(strings.Split(*allow, ","))
 			fmt.Fprintln(os.Stderr, "tandem: guest allowlist active (emails are claimed, not verified)")
@@ -184,8 +189,9 @@ func run() int {
 				}
 			}
 			// Context injection adapter (FR15, PRD §8.3). Claude Code
-			// gets the managed CLAUDE.md include; other agents get a
-			// prompt-prepended digest or clipboard mode.
+			// gets the managed CLAUDE.md include; AGENTS.md-compatible
+			// agents get the same file-based path. Prepend/clipboard modes
+			// apply to the --no-mirror fallback submit path.
 			switch agentKind {
 			case adapter.KindClaude:
 				if err := adapter.EnsureClaudeInclude(cwd); err != nil {
@@ -198,9 +204,17 @@ func run() int {
 					fmt.Fprintln(os.Stderr, "tandem: managed AGENTS.md block points the agent at DOMAIN.md")
 				}
 			case adapter.KindPrepend:
-				fmt.Fprintln(os.Stderr, "tandem: domain digest prepended to each submitted prompt")
+				if mirrorOn {
+					fmt.Fprintln(os.Stderr, "tandem: Enter sends the visible line exactly; use --no-mirror for prepend-context fallback")
+				} else {
+					fmt.Fprintln(os.Stderr, "tandem: domain digest prepended to each submitted prompt")
+				}
 			case adapter.KindClipboard:
-				fmt.Fprintln(os.Stderr, "tandem: clipboard mode — Ctrl-] copies the composed prompt for you to paste")
+				if mirrorOn {
+					fmt.Fprintln(os.Stderr, "tandem: Enter sends the mirrored line; use --no-mirror for clipboard fallback")
+				} else {
+					fmt.Fprintln(os.Stderr, "tandem: clipboard mode — Ctrl-] copies the composed prompt for you to paste")
+				}
 			}
 		}
 		// Domain extractor (FR12): watches the REDACTED transcript (the
@@ -266,9 +280,10 @@ func run() int {
 		opts.OnResize = func(cols, rows uint16) {
 			_ = link.WriteControl(map[string]any{"type": "resize", "cols": cols, "rows": rows})
 		}
-		// Host-only submit path (FR8/FR21): Ctrl-] flushes the Composer
-		// through the signing chokepoint into the PTY. Only the host's
-		// terminal can trigger this — guests have no message for it.
+		// Host-only submit path (FR8/FR21): with mirroring on, the
+		// engineer's normal Enter submits the visible terminal line. With
+		// --no-mirror, Ctrl-] flushes the Composer through the signing
+		// chokepoint into the PTY. Guests have no message for either path.
 		sign, err := signer.New()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "tandem:", err)
@@ -278,11 +293,60 @@ func run() int {
 		opts.Injector = injector
 
 		// Mirror is created after the launch wait (below) so nothing
-		// composed pre-launch double-injects; the submit intercept refers
-		// to it, so declare it here.
+		// composed pre-launch double-injects. Submit bookkeeping refers to
+		// it, so declare it here.
 		var mir *mirror.Mirror
 		var lastKey atomic.Int64
-		mirrorOn := !*noMirror
+		recordSubmitted := func(text string, stats map[string]int) {
+			if recorder != nil {
+				recorder.RecordSubmit(text, stats)
+			}
+			if ext != nil {
+				ext.NoteComposer(text)
+			}
+		}
+		flushMirroredSubmit := func() {
+			if mir != nil && !mir.InSync(b.Doc.Text()) {
+				fmt.Fprint(os.Stderr, "\r\ntandem: latest guest text is still appearing in your prompt; press Enter again after it lands\r\n")
+				return
+			}
+			text, stats := b.Flush()
+			if text == "" {
+				return
+			}
+			recordSubmitted(text, stats)
+			if mir != nil {
+				mir.Reset()
+			}
+			if domainDirty.Swap(false) {
+				fmt.Fprint(os.Stderr, "\r\ntandem: DOMAIN.md changed; your prompt was sent as typed, so mention a re-read if needed\r\n")
+			}
+			fmt.Fprint(os.Stdout, "\a") // host cue: it ran
+		}
+		submitComposerFallback := func() {
+			text, stats := b.Flush()
+			if text == "" {
+				return
+			}
+			recordSubmitted(text, stats)
+			// Prepend the confirmed-card digest for agents without a
+			// native include (Codex/Gemini/Aider); Claude Code reads
+			// DOMAIN.md via the CLAUDE.md include instead.
+			if agentKind == adapter.KindPrepend {
+				text = adapter.PrependPrompt(agentKind,
+					adapter.Digest(b.Board.Cards(), 1024), text)
+			}
+			if domainDirty.Swap(false) {
+				text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
+			}
+			if agentKind == adapter.KindClipboard {
+				fmt.Fprintf(os.Stdout, "\x1b]52;c;%s\a", base64.StdEncoding.EncodeToString([]byte(text)))
+				fmt.Fprint(os.Stderr, "\r\ntandem: composed prompt copied to clipboard — paste to send\r\n")
+				return
+			}
+			injector.Submit(sign.Sign(text))
+			fmt.Fprint(os.Stdout, "\a") // host cue: it ran
+		}
 
 		// Terminal title presence: composed from the sharing state and the
 		// live guest count, refreshed whenever either changes. Written as an
@@ -310,7 +374,7 @@ func run() int {
 
 		// Privacy shutter (FR4) on Ctrl-\. Intercepted bytes are
 		// swallowed before the child, so the wrapped TUI never sees
-		// them (it loses Ctrl-\/SIGQUIT and Ctrl-] — documented).
+		// them (it loses Ctrl-\/SIGQUIT — documented).
 		opts.Intercepts = map[byte]func(){
 			0x1C: func() { // Ctrl-\ : shutter
 				shuttered = !shuttered
@@ -324,56 +388,9 @@ func run() int {
 				fmt.Fprint(os.Stdout, "\a\033]0;tandem ● link copied\007")
 				titleMu.Unlock()
 			},
-			0x1D: func() { // Ctrl-] : RUN the composed prompt
-				// Erase the live mirror preview first, so the authoritative
-				// paste replaces it instead of doubling. Done before Flush
-				// so Flush's clear-broadcast → mir.Update("") is a no-op.
-				var clearSeq string
-				if mir != nil {
-					clearSeq = mir.ClearAndReset()
-				}
-				text, stats := b.Flush()
-				if text == "" {
-					return
-				}
-				if recorder != nil {
-					recorder.RecordSubmit(text, stats)
-				}
-				if ext != nil {
-					ext.NoteComposer(text)
-				}
-				// Prepend the confirmed-card digest for agents without a
-				// native include (Codex/Gemini/Aider); Claude Code reads
-				// DOMAIN.md via the CLAUDE.md include instead.
-				if agentKind == adapter.KindPrepend {
-					text = adapter.PrependPrompt(agentKind,
-						adapter.Digest(b.Board.Cards(), 1024), text)
-				}
-				if domainDirty.Swap(false) {
-					text = "(The domain model changed — re-read DOMAIN.md before acting.)\n\n" + text
-				}
-				// Clipboard fallback applies only when we're NOT mirroring
-				// (mirroring is itself injection — if it's on, run the line).
-				if mir == nil && agentKind == adapter.KindClipboard {
-					fmt.Fprintf(os.Stdout, "\x1b]52;c;%s\a", base64.StdEncoding.EncodeToString([]byte(text)))
-					fmt.Fprint(os.Stderr, "\r\ntandem: composed prompt copied to clipboard — paste to send\r\n")
-					return
-				}
-				if mir != nil {
-					// Mirroring: erase the live preview, then retype the
-					// authoritative text raw on one line and press Enter.
-					// Raw (not bracketed paste) so it runs cleanly on every
-					// agent — shells don't strip paste markers. The text was
-					// already signed as it mirrored; this is the same
-					// chokepoint. Newlines flatten to spaces (single line).
-					injector.Submit(sign.SignRaw(clearSeq + flattenLine(text) + "\r"))
-				} else {
-					// No mirror: bracketed paste + Enter (preserves
-					// multi-line prompts; clean on agents that strip markers).
-					injector.Submit(sign.Sign(text))
-				}
-				fmt.Fprint(os.Stdout, "\a") // host cue: it ran
-			},
+		}
+		if !mirrorOn {
+			opts.Intercepts[0x1D] = submitComposerFallback // Ctrl-] : RUN the composed prompt
 		}
 
 		// Ctrl-G admits the next waiting guest (only bound in --approve
@@ -401,7 +418,7 @@ func run() int {
 		copyToClipboard(link.JoinURL)
 		fmt.Fprintln(os.Stderr, "tandem: guest link copied to your clipboard")
 		if mirrorOn {
-			fmt.Fprintln(os.Stderr, "tandem: guest typing appears in your prompt — review, then Ctrl-] to run it")
+			fmt.Fprintln(os.Stderr, "tandem: guest typing appears in your prompt — review, then press Enter like usual")
 		}
 
 		// Hold the agent until the host has shared the link — the agent's
@@ -419,7 +436,12 @@ func run() int {
 		// whenever the host is typing. Wiring here (post-wait) avoids
 		// double-injecting anything composed during the wait.
 		if mirrorOn {
-			opts.OnHostInput = func() { lastKey.Store(time.Now().UnixNano()) }
+			opts.OnHostInput = func(p []byte) {
+				lastKey.Store(time.Now().UnixNano())
+				if containsSubmitKey(p) {
+					flushMirroredSubmit()
+				}
+			}
 			mir = mirror.New(
 				func(raw string) { injector.Submit(sign.SignRaw(raw)) },
 				func() bool { return time.Since(time.Unix(0, lastKey.Load())) < time.Second },
@@ -437,22 +459,13 @@ func run() int {
 	return code
 }
 
-// flattenLine collapses a prompt to a single line for raw injection:
-// newlines/tabs become spaces, other control runes drop. The mirror
-// preview is already single-line (sanitize); this keeps the run in sync.
-func flattenLine(s string) string {
-	var b strings.Builder
-	for _, r := range s {
-		switch {
-		case r == '\n' || r == '\t' || r == '\r':
-			b.WriteRune(' ')
-		case r < 0x20 || r == 0x7f:
-			// drop other control characters
-		default:
-			b.WriteRune(r)
+func containsSubmitKey(p []byte) bool {
+	for _, b := range p {
+		if b == '\r' || b == '\n' {
+			return true
 		}
 	}
-	return b.String()
+	return false
 }
 
 // copyToClipboard puts s on the host's terminal clipboard via OSC 52.
