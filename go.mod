@@ -1,13 +1,13 @@
 module github.com/mherzog4/tandem
 
-go 1.25.0
+go 1.26.0
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.57.0
+	github.com/anthropics/anthropic-sdk-go v1.71.0
 	github.com/coder/websocket v1.8.15
 	github.com/creack/pty v1.1.24
-	golang.org/x/term v0.45.0
-	golang.org/x/time v0.15.0
+	golang.org/x/term v0.46.0
+	golang.org/x/time v0.16.0
 )
 
 require (
@@ -22,5 +22,5 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 )
